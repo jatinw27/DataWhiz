@@ -1,6 +1,7 @@
 import React from 'react'
-import Bot from "./components/Bot.jsx";
-
+import Bot from './component/Bot.jsx';
+<component />
+<B></B>ot'
 
 function App() {
   return (

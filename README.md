@@ -14,10 +14,6 @@
 - Provide an interactive chat experience  
 - Maintain conversation context per session  
 
-> ⚠️ Note:  
-> The live link currently showcases the **DataWhiz Chatbot** experience.  
-> Advanced data querying features are under active development.
-
 ---
 
 ## 🛠 Tech Stack

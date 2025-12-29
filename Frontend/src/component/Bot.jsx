@@ -15,32 +15,108 @@ function Bot() {
     localStorage.setItem("myChatSession", sessionId);
 }, [sessionId]);
 
-    const handleSendMsg = async () => {
-    if (!input.trim()) return;
+    const isDataQuery = (text) => {
+  const keywords = [
+    "show",
+    "list",
+    "get",
+    "fetch",
+    "users",
+    "data",
+    "records",
+    "older than",
+    "younger than",
+    "count",
+    "how many"
+  ];
 
-    const userText = input.trim();
+  const lowerText = text.toLowerCase();
+  return keywords.some(keyword => lowerText.includes(keyword));
+};
+
+
+//     const handleSendMsg = async () => {
+//     if (!input.trim()) return;
+
+//     const userText = input.trim();
 
    
-    setMsg(prev => [...prev, { text: userText, sender: 'user' }]);
-    setInput("");
-    setLoading(true);
+//     setMsg(prev => [...prev, { text: userText, sender: 'user' }]);
+//     setInput("");
+//     setLoading(true);
 
-    try {
-        const res = await axios.post("https://datawhiz-production.up.railway.app/api/chatbot/message", {
-
-            text: userText,
-            sessionId: sessionId
-        });
+//     try {
+//         const res = await axios.post(
+//           // "https://datawhiz-production.up.railway.app/api/chatbot/message", 
+//             "http://localhost:3000/api/nlq/ask",
+//           {
+//               question: userText
+//           //  text: userText,
+//           //   sessionId: sessionId
+//         });
 
         
-        setMsg(prev => [...prev, { text: res.data.botMsg, sender: 'bot' }]);
+//         // setMsg(prev => [...prev, { text: res.data.botMsg, sender: 'bot' }]);
+//         setMsg(prev => [ ...prev, {text:res.data.answer, sender: 'bot' }])
 
-    } catch (error) {
-        console.error("Error:", error);
-        setMsg(prev => [...prev, { text: "Bot is offline", sender: 'bot' }]);
-    } finally {
-        setLoading(false);
+//     } catch (error) {
+//         console.error("Error:", error);
+//         setMsg(prev => [...prev, { text: "Bot is offline", sender: 'bot' }]);
+//     } finally {
+//         setLoading(false);
+//     }
+// };
+
+      const handleSendMsg = async () => {
+  if (!input.trim()) return;
+
+  const userText = input.trim();
+
+  // show user message immediately
+  setMsg(prev => [...prev, { text: userText, sender: 'user' }]);
+  setInput("");
+  setLoading(true);
+
+  try {
+    let res;
+
+    if (isDataQuery(userText)) {
+      // 🔹 DATA QUESTION → NLQ ENGINE
+      res = await axios.post(
+        "http://localhost:3000/api/nlq/ask",
+        { question: userText }
+      );
+
+      setMsg(prev => [
+        ...prev,
+        { text: res.data.answer, sender: 'bot' }
+      ]);
+
+    } else {
+      // 🔹 NORMAL CHAT → AI CHATBOT
+      res = await axios.post(
+        "https://datawhiz-production.up.railway.app/api/chatbot/message",
+        {
+          text: userText,
+          sessionId: sessionId
+        }
+      );
+
+      setMsg(prev => [
+        ...prev,
+        { text: res.data.botMsg, sender: 'bot' }
+      ]);
     }
+
+  } catch (error) {
+    console.error("Error:", error);
+    setMsg(prev => [
+      ...prev,
+      { text: "Something went wrong. Please try again.", sender: 'bot' }
+    ]);
+  } finally {
+    setLoading(false);
+  }
 };
 
     const handleKeyPress = (e) => {
@@ -81,7 +157,7 @@ function Bot() {
                 >
                   {mesg.text}
                 </div>
-              ))}
+              ))} 
                 {loading && (
                 <div className="bg-gray-700 text-gray-300 px-4 py-2 rounded-xl max-w-[60%] self-start">
                   DataWhiz is thinking...

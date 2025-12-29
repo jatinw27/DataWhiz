@@ -1,9 +1,9 @@
 import 'dotenv/config';
 import express from 'express'
 import mongoose from 'mongoose'
-import chatbotRoutes from './routes/chatbot.route.js'
+// import chatbotRoutes from './routes/chatbot.route.js'
 import cors from 'cors'
-
+import nlqRoutes from "./routes/nlq.route.js"
 
 const app = express()
 
@@ -24,7 +24,10 @@ app.get('/', (req, res) => {
 })
 
 // routes defined
-app.use('/api/chatbot',chatbotRoutes)
+
+// app.use('/api/chatbot',chatbotRoutes)
+
+app.use("/api/nlq", nlqRoutes);
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`)

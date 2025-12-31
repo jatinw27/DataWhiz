@@ -1,4 +1,6 @@
 import db from "./database.js";
+import { detectAggregation } from "./aggregation.service.js";
+import { detectCondition } from "./condition.service.js";
 import { getDatabaseSchema } from "./schema.service.js";
 import { parseIntent } from "./intent.service.js";
 import { detectTable } from "./table.service.js";
@@ -23,21 +25,34 @@ export async function handleNLQ(req, res) {
   }
 
   // Detect columns
-  const columns = detectColumns(question, table, schema);
-  const selectedColumns = columns.length ? columns.join(", ") : "*";
+ const columns = detectColumns(question, table, schema);
+const aggregation = detectAggregation(question, table, schema);
+const selectedColumns = aggregation
+  ? aggregation
+  : columns.length
+    ? columns.join(", ")
+    : "*";
 
-  // Build SQL
-  let sql = "";
+let sql = "";
+const condition = detectCondition(question, table, schema);
 
-  if (intent === "select") {
-    sql = `SELECT ${selectedColumns} FROM ${table}`;
-  } else if (intent === "count") {
-    sql = `SELECT COUNT(*) as count FROM ${table}`;
-  } else {
-    return res.json({
-      answer: "I couldn't understand your intent."
-    });
+if (intent === "select" || aggregation) {
+  sql = `SELECT ${selectedColumns} FROM ${table}`;
+  if (condition) {
+    sql += ` WHERE ${condition}`;
   }
+} else if (intent === "count") {
+  sql = `SELECT COUNT(*) as count FROM ${table}`;
+  if (condition) {
+    sql += ` WHERE ${condition}`;
+  }
+} else {
+  return res.json({
+    answer: "I couldn't understand your intent."
+  });
+}
+
+
 
   //  Execute SQL
   db.all(sql, [], (err, rows) => {

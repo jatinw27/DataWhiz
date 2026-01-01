@@ -1,32 +1,50 @@
-import db from "./database.js";
 import { aiGenerateSQL } from "./ai-fallback.service.js";
 import { detectAggregation } from "./aggregation.service.js";
 import { detectCondition } from "./condition.service.js";
-import { getDatabaseSchema } from "./schema.service.js";
 import { parseIntent } from "./intent.service.js";
 import { detectTable } from "./table.service.js";
 import { detectColumns } from "./column.service.js";
 import { toNaturalLanguage } from "./response.service.js";
+import { dataSourceManager } from "../index.js";
+import { buildMongoQuery } from "./mongo-query.builder.js";
 
 export async function handleNLQ(req, res) {
-  const { question } = req.body;
+  const { question, source = "sqlite" } = req.body;
 
-  //  Reads database schema
-  const schema = await getDatabaseSchema();
+  const dataSource = dataSourceManager.get(source);
+  if (!dataSource) {
+    return res.json({ answer: "Invalid data source selected." });
+  }
 
-  //  Detect intent (select / count)
+  // 1️⃣ Read schema from selected datasource
+  const schema = await dataSource.getSchema();
+
+  // 2️⃣ Detect intent
   const intent = parseIntent(question);
 
-  //  Detect table
+  // 3️⃣ Detect table
   const table = detectTable(question, schema);
- if (!table) {
-  try {
-    const aiSQL = await aiGenerateSQL(question, schema);
 
-    db.all(aiSQL, [], (err, rows) => {
-      if (err) {
-        return res.json({ answer: "AI generated invalid SQL." });
-      }
+
+
+  // ---------------- AI FALLBACK ----------------
+ if (!table) {
+  // AI fallback ONLY for SQL datasources
+  if (dataSource.getType() !== "sqlite") {
+    return res.json({
+      answer:
+        "This question requires AI reasoning, which is currently supported only for SQL databases."
+    });
+  }
+  
+    try {
+      const aiSQL = await aiGenerateSQL(question, schema);
+
+      const rows = await dataSource.runQuery(
+        dataSource.getType() === "mongo"
+          ? { rawSQL: aiSQL } // placeholder for future
+          : aiSQL
+      );
 
       return res.json({
         question,
@@ -35,58 +53,78 @@ export async function handleNLQ(req, res) {
         data: rows,
         source: "ai"
       });
-    });
-  } catch (e) {
-    return res.json({
-      answer: "I couldn't understand your question."
-    });
+    } catch {
+      return res.json({
+        answer: "I couldn't understand your question."
+      });
+    }
   }
 
-  return;
-}
+  // 4️⃣ Detect columns & aggregation
+  const columns = detectColumns(question, table, schema);
+  const aggregation = detectAggregation(question, table, schema);
 
+  const condition = detectCondition(question, table, schema);
 
-  // Detect columns
- const columns = detectColumns(question, table, schema);
-const aggregation = detectAggregation(question, table, schema);
-const selectedColumns = aggregation
-  ? aggregation
-  : columns.length
+  // ---------------- BUILD QUERY ----------------
+  let resultRows;
+  let generatedQuery;
+
+  if (dataSource.getType() === "mongo") {
+  // 🟢 Mongo
+  const mongoQuery = buildMongoQuery({
+    table,
+    columns,
+    condition,
+    intent,
+    aggregation
+  });
+
+  resultRows = await dataSource.runQuery(mongoQuery);
+  generatedQuery = mongoQuery;
+
+} else if (dataSource.getType() === "csv") {
+  // 🟢 CSV (IMPORTANT FIX)
+  const csvQuery = {
+    table,
+    columns,
+    condition,
+    aggregation
+  };
+
+  resultRows = await dataSource.runQuery(csvQuery);
+  generatedQuery = csvQuery;
+
+} else {
+  // 🟢 SQLite (SQL)
+  let sql = "";
+
+  const selectedColumns = aggregation
+    ? aggregation
+    : columns.length
     ? columns.join(", ")
     : "*";
 
-let sql = "";
-const condition = detectCondition(question, table, schema);
+  if (intent === "select" || aggregation) {
+    sql = `SELECT ${selectedColumns} FROM ${table}`;
+    if (condition) sql += ` WHERE ${condition}`;
+  } else if (intent === "count") {
+    sql = `SELECT COUNT(*) as count FROM ${table}`;
+    if (condition) sql += ` WHERE ${condition}`;
+  } else {
+    return res.json({ answer: "I couldn't understand your intent." });
+  }
 
-if (intent === "select" || aggregation) {
-  sql = `SELECT ${selectedColumns} FROM ${table}`;
-  if (condition) {
-    sql += ` WHERE ${condition}`;
-  }
-} else if (intent === "count") {
-  sql = `SELECT COUNT(*) as count FROM ${table}`;
-  if (condition) {
-    sql += ` WHERE ${condition}`;
-  }
-} else {
-  return res.json({
-    answer: "I couldn't understand your intent."
-  });
+  resultRows = await dataSource.runQuery(sql);
+  generatedQuery = sql;
 }
 
-
-
-  //  Execute SQL
-  db.all(sql, [], (err, rows) => {
-    if (err) {
-      return res.json({ answer: "Database error." });
-    }
-
-    res.json({
-      question,
-      generatedQuery: sql,
-      answer: toNaturalLanguage(rows),
-      data: rows
-    });
+  // 5️⃣ Respond
+  res.json({
+    question,
+    generatedQuery,
+    answer: toNaturalLanguage(resultRows),
+    data: resultRows,
+    source
   });
 }

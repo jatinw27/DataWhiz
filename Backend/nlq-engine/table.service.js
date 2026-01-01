@@ -1,10 +1,21 @@
 export function detectTable(question, schema) {
-    const q = question.toLowerCase();
+  if (!question || !schema) return null;
 
-    for (const table of Object.keys(schema)) {
-        if(q.includes(table)) {
-            return table;
-        }
-    }
-    return null;
+  const q = question.toLowerCase().trim();
+  const tables = Object.keys(schema);
+
+  for (const table of tables) {
+    const t = table.toLowerCase();
+
+    // Exact match
+    if (q.includes(t)) return table;
+
+    // Singular match (user ↔ users)
+    if (t.endsWith("s") && q.includes(t.slice(0, -1))) return table;
+
+    // Plural match (users ↔ user)
+    if (!t.endsWith("s") && q.includes(`${t}s`)) return table;
+  }
+
+  return null;
 }

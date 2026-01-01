@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "name": "chatbot",
   "version": "1.0.0",
   "description": "chatbot app",

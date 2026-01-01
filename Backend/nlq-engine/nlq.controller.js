@@ -1,4 +1,5 @@
 import db from "./database.js";
+import { aiGenerateSQL } from "./ai-fallback.service.js";
 import { detectAggregation } from "./aggregation.service.js";
 import { detectCondition } from "./condition.service.js";
 import { getDatabaseSchema } from "./schema.service.js";
@@ -18,11 +19,32 @@ export async function handleNLQ(req, res) {
 
   //  Detect table
   const table = detectTable(question, schema);
-  if (!table) {
+ if (!table) {
+  try {
+    const aiSQL = await aiGenerateSQL(question, schema);
+
+    db.all(aiSQL, [], (err, rows) => {
+      if (err) {
+        return res.json({ answer: "AI generated invalid SQL." });
+      }
+
+      return res.json({
+        question,
+        generatedQuery: aiSQL,
+        answer: toNaturalLanguage(rows),
+        data: rows,
+        source: "ai"
+      });
+    });
+  } catch (e) {
     return res.json({
-      answer: "I couldn't identify which table you're asking about."
+      answer: "I couldn't understand your question."
     });
   }
+
+  return;
+}
+
 
   // Detect columns
  const columns = detectColumns(question, table, schema);

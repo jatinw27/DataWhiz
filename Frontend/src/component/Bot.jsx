@@ -26,7 +26,7 @@ function Bot() {
     setLoading(true);
 
     try {
-        const res = await axios.post("https://datawhiz-production.up.railway.app/api/chatbot/message", {
+        const res = await axios.post("https://datawhiz-efpw.onrender.com", {
 
             text: userText,
             sessionId: sessionId

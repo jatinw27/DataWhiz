@@ -14,7 +14,7 @@ function Bot() {
     useEffect(() => {
     localStorage.setItem("myChatSession", sessionId);
 }, [sessionId]);
-
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
     const handleSendMsg = async () => {
     if (!input.trim()) return;
 
@@ -26,11 +26,14 @@ function Bot() {
     setLoading(true);
 
     try {
-        const res = await axios.post("https://datawhiz-efpw.onrender.com", {
+       const res = await axios.post(
+  `${API_BASE}/api/chatbot/message`,
+  {
+    text: userText,
+    sessionId: sessionId
+  }
+);
 
-            text: userText,
-            sessionId: sessionId
-        });
 
         
         setMsg(prev => [...prev, { text: res.data.botMsg, sender: 'bot' }]);
@@ -48,6 +51,7 @@ function Bot() {
             handleSendMsg();
         }
     };
+
 
   return (
        <div className='flex flex-col min-h-screen bg-[#0d0d0d] text-white'>

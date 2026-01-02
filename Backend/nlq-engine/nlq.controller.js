@@ -7,6 +7,7 @@ import { detectColumns } from "./column.service.js";
 import { toNaturalLanguage } from "./response.service.js";
 import { dataSourceManager } from "../index.js";
 import { buildMongoQuery } from "./mongo-query.builder.js";
+import { aiGenerateQuery } from "./ai-structured.service.js";
 
 export async function handleNLQ(req, res) {
   const { question, source = "sqlite" } = req.body;
@@ -28,37 +29,51 @@ export async function handleNLQ(req, res) {
 
 
   // ---------------- AI FALLBACK ----------------
- if (!table) {
-  // AI fallback ONLY for SQL datasources
-  if (dataSource.getType() !== "sqlite") {
+ // ---------------- AI FALLBACK (ALL DATASOURCES) ----------------
+if (!table) {
+  try {
+    const aiQuery = await aiGenerateQuery(question, schema);
+
+    let rows;
+
+    if (dataSource.getType() === "mongo") {
+      rows = await dataSource.runQuery(aiQuery);
+    } else if (dataSource.getType() === "csv") {
+      rows = await dataSource.runQuery(aiQuery);
+    } else {
+      // sqlite
+      const { table, columns, condition, aggregation } = aiQuery;
+
+      let sql = "";
+
+      const selectedColumns = aggregation
+        ? aggregation
+        : columns?.length
+        ? columns.join(", ")
+        : "*";
+
+      sql = `SELECT ${selectedColumns} FROM ${table}`;
+      if (condition) sql += ` WHERE ${condition}`;
+
+      rows = await dataSource.runQuery(sql);
+    }
+
     return res.json({
-      answer:
-        "This question requires AI reasoning, which is currently supported only for SQL databases."
+      question,
+      generatedQuery: aiQuery,
+      answer: toNaturalLanguage(rows),
+      data: rows,
+      source: "ai"
+    });
+
+  } catch (err) {
+    console.error(err);
+    return res.json({
+      answer: "AI could not understand your question."
     });
   }
-  
-    try {
-      const aiSQL = await aiGenerateSQL(question, schema);
+}
 
-      const rows = await dataSource.runQuery(
-        dataSource.getType() === "mongo"
-          ? { rawSQL: aiSQL } // placeholder for future
-          : aiSQL
-      );
-
-      return res.json({
-        question,
-        generatedQuery: aiSQL,
-        answer: toNaturalLanguage(rows),
-        data: rows,
-        source: "ai"
-      });
-    } catch {
-      return res.json({
-        answer: "I couldn't understand your question."
-      });
-    }
-  }
 
   // 4️⃣ Detect columns & aggregation
   const columns = detectColumns(question, table, schema);

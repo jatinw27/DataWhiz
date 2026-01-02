@@ -3,6 +3,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import path from "path";
+import uploadRoutes from "./routes/upload.route.js";
+
 
 import nlqRoutes from "./routes/nlq.route.js";
 import { DataSourceManager } from './data-sources/datasource.manager.js';
@@ -53,6 +55,7 @@ dataSourceManager.register(
 
 // routes
 app.use("/api/nlq", nlqRoutes);
+app.use("/api/upload-csv", uploadRoutes);
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

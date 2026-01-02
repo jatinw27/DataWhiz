@@ -41,7 +41,7 @@ dataSourceManager.register(
 // Register Mongo
 dataSourceManager.register(
   "mongo",
-  new MongoDataSource(process.env.MONGODB_URI, "datawhiz")
+  new MongoDataSource(process.env.MONGODB_URI, "bot")
 );
 
 dataSourceManager.register(

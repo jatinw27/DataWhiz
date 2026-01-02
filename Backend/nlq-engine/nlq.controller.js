@@ -32,30 +32,27 @@ export async function handleNLQ(req, res) {
  // ---------------- AI FALLBACK (ALL DATASOURCES) ----------------
 if (!table) {
   try {
-    const aiQuery = await aiGenerateQuery(question, schema);
+    const aiQuery = await aiGenerateQuery(
+      question,
+      schema,
+      dataSource.getType()
+    );
+console.log("AI QUERY:", aiQuery);
 
     let rows;
 
-    if (dataSource.getType() === "mongo") {
+    if (aiQuery.type === "mongo") {
+      // Mongo AI fallback
       rows = await dataSource.runQuery(aiQuery);
-    } else if (dataSource.getType() === "csv") {
-      rows = await dataSource.runQuery(aiQuery);
+
     } else {
-      // sqlite
-      const { table, columns, condition, aggregation } = aiQuery;
-
-      let sql = "";
-
-      const selectedColumns = aggregation
-        ? aggregation
-        : columns?.length
-        ? columns.join(", ")
-        : "*";
-
-      sql = `SELECT ${selectedColumns} FROM ${table}`;
-      if (condition) sql += ` WHERE ${condition}`;
-
-      rows = await dataSource.runQuery(sql);
+      // SQLite / CSV AI fallback
+      rows = await dataSource.runQuery({
+        table: aiQuery.table,
+        columns: aiQuery.columns,
+        condition: aiQuery.condition,
+        aggregation: aiQuery.aggregation
+      });
     }
 
     return res.json({
@@ -67,12 +64,13 @@ if (!table) {
     });
 
   } catch (err) {
-    console.error(err);
+    console.error("AI FALLBACK ERROR:", err);
     return res.json({
       answer: "AI could not understand your question."
     });
   }
 }
+
 
 
   // 4️⃣ Detect columns & aggregation

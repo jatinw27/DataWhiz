@@ -1,21 +1,52 @@
-import { aiGenerateSQL } from "./ai-fallback.service.js";
+// import { aiGenerateSQL } from "./ai-fallback.service.js";
+// import { detectAggregation } from "./aggregation.service.js";
+// import { detectCondition } from "./condition.service.js";
+// import { parseIntent } from "./intent.service.js";
+// import { detectTable } from "./table.service.js";
+// import { detectColumns } from "./column.service.js";
+// import { toNaturalLanguage } from "./response.service.js";
+// import { dataSourceManager } from "../index.js";
+// import { buildMongoQuery } from "./mongo-query.builder.js";
+// import { aiGenerateQuery } from "./ai-structured.service.js";
+// // import { datasetManager } from "../index.js";
+
+// import { aiGenerateSQL } from "./ai-fallback.service.js";
 import { detectAggregation } from "./aggregation.service.js";
 import { detectCondition } from "./condition.service.js";
 import { parseIntent } from "./intent.service.js";
 import { detectTable } from "./table.service.js";
 import { detectColumns } from "./column.service.js";
 import { toNaturalLanguage } from "./response.service.js";
-import { dataSourceManager } from "../index.js";
+import { datasetManager, dataSourceManager } from "../index.js";
 import { buildMongoQuery } from "./mongo-query.builder.js";
 import { aiGenerateQuery } from "./ai-structured.service.js";
+// import { datasetManager } from "../index.js";
 
 export async function handleNLQ(req, res) {
-  const { question, source = "sqlite" } = req.body;
+  const question = req.body.question || req.body.text;
+  const source = req.body.source || "sqlite";
 
-  const dataSource = dataSourceManager.get(source);
-  if (!dataSource) {
-    return res.json({ answer: "Invalid data source selected." });
+  if (!question || typeof question !== "string") {
+    return res.json({
+      answer: "Question is missing or invalid."
+    });
   }
+
+
+    let dataSource;
+
+    if(source === "csv") {
+      dataSource = datasetManager.get(req.body.dataset || "users")
+    } else {
+      dataSource = dataSourceManager.get(source);
+    }
+
+  if (!dataSource) {
+    return res.json({
+      answer: "Invalid data source selected."
+    });
+  }
+
 
   // 1️⃣ Read schema from selected datasource
   const schema = await dataSource.getSchema();
@@ -141,3 +172,4 @@ console.log("AI QUERY:", aiQuery);
     source
   });
 }
+

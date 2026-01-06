@@ -2,7 +2,7 @@ import express from "express";
 import multer from "multer";
 import path from "path";
 import { CSVDataSource } from "../data-sources/csv.datasource.js";
-import { dataSourceManager } from "../index.js";
+import { datasetManager } from "../index.js";
 
 const router = express.Router();
 
@@ -40,9 +40,9 @@ router.post("/", upload.single("file"), (req, res) => {
     .basename(req.file.originalname, ".csv")
     .toLowerCase();
 
-  dataSourceManager.register(
+  datasetManager.register(
     tableName,
-    new CSVDataSource(filePath, tableName)
+    filePath
   );
 
   res.json({

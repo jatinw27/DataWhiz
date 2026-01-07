@@ -6,6 +6,7 @@ import path from "path";
 import uploadRoutes from "./routes/upload.route.js";
 import datasetRoutes from "./routes/dataset.route.js";
 
+import { dataSourceManager, datasetManager } from './core/managers.js';
 import { DatasetManager } from './datasets/datasets.manager.js';
 import nlqRoutes from "./routes/nlq.route.js";
 import { DataSourceManager } from './data-sources/datasource.manager.js';
@@ -31,7 +32,6 @@ app.get('/', (req, res) => {
 });
 
 // 🔥 CREATE & EXPORT SINGLE DATASOURCE MANAGER
-export const dataSourceManager = new DataSourceManager();
 
 // Register SQLite
 dataSourceManager.register(
@@ -53,7 +53,6 @@ dataSourceManager.register(
   )
 );
 
-export const datasetManager = new DatasetManager();
 
 // default CSV datasets
 datasetManager.registerCSV(

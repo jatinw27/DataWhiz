@@ -4,7 +4,7 @@ import { parseIntent } from "./intent.service.js";
 import { detectTable } from "./table.service.js";
 import { detectColumns } from "./column.service.js";
 import { toNaturalLanguage } from "./response.service.js";
-import { datasetManager, dataSourceManager } from "../index.js";
+import { datasetManager, dataSourceManager } from "../core/managers.js";
 import { buildMongoQuery } from "./mongo-query.builder.js";
 import { aiGenerateQuery } from "./ai-structured.service.js";
 

@@ -2,14 +2,38 @@ import React, { useState, useEffect } from 'react'
 import axios from 'axios';
 import { FaUserCircle } from 'react-icons/fa';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
+
 function Bot() {
+    const [uploading, setUploading] = useState(false);
     const [msg, setMsg] = useState([]);
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
-    
+    const [datasets, setDatasets] = useState([]);
+    const [selectedDataset, setSelectedDataset] = useState("users");
+    const [selectedSource, setSelectedSource] = useState("csv")
+
     const [sessionId] = useState(() => {
     return localStorage.getItem("myChatSession") || "user_" + Date.now();
 });
+
+    useEffect(() => {
+      async function fetchDatasets() {
+        try {
+          const res = await axios.get(
+            `${API_BASE}/api/datasets`
+          );
+          setDatasets(res.data.datasets || []);
+          if (res.data.datasets?.length) {
+            setSelectedDataset(res.data.datasets[0]);
+          }
+        } catch (err) {
+          console.error("failed to load datasets", err);
+          
+        }
+      }
+      fetchDatasets();
+    }, [])
 
     useEffect(() => {
     localStorage.setItem("myChatSession", sessionId);
@@ -26,7 +50,7 @@ function Bot() {
     "records",
     "older than",
     "younger than",
-    "count",
+    "count", 
     "how many"
   ];
 
@@ -34,6 +58,34 @@ function Bot() {
   return keywords.some(keyword => lowerText.includes(keyword));
 };
 
+const handleCSVUpload = async (file) => {
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    setUploading(true);
+
+    await axios.post(
+      `${API_BASE}/api/upload-csv`,
+      formData,
+      { headers: { "Content-Type": "multipart/form-data" } }
+    );
+
+    // 🔁 refresh datasets after upload
+    const res = await axios.get(`${API_BASE}/api/datasets`);
+    setDatasets(res.data.datasets || []);
+    setSelectedDataset(res.data.datasets[0]);
+
+    alert("CSV uploaded successfully!");
+  } catch (err) {
+    console.error("Upload failed", err);
+    alert("CSV upload failed");
+  } finally {
+    setUploading(false);
+  }
+};
 
 //     const handleSendMsg = async () => {
 //     if (!input.trim()) return;
@@ -72,6 +124,13 @@ function Bot() {
 
   const userText = input.trim();
 
+  if (isDataQuery(userText) && !selectedDataset) {
+  alert("Please select a dataset first");
+  return;
+}
+
+
+
   // show user message immediately
   setMsg(prev => [...prev, { text: userText, sender: 'user' }]);
   setInput("");
@@ -83,9 +142,14 @@ function Bot() {
     if (isDataQuery(userText)) {
       // 🔹 DATA QUESTION → NLQ ENGINE
       res = await axios.post(
-        "http://localhost:3000/api/nlq/ask",
-        { question: userText }
-      );
+  `${API_BASE}/api/nlq/ask`,
+  {
+    question: userText,
+    source: selectedSource,
+    dataset: selectedDataset
+  }
+);
+
 
       setMsg(prev => [
         ...prev,
@@ -125,6 +189,8 @@ function Bot() {
         }
     };
 
+    
+
   return (
        <div className='flex flex-col min-h-screen bg-[#0d0d0d] text-white'>
         {/* Header */}
@@ -135,6 +201,59 @@ function Bot() {
         </div>
       </header>
       
+{/* Source & Dataset Selector */}
+<div className="w-full max-w-4xl mx-auto px-4 mb-4 mt-24">
+
+  <div className="flex gap-3 items-center">
+
+    {/* Source Selector */}
+    <select
+      value={selectedSource}
+      onChange={(e) => setSelectedSource(e.target.value)}
+      className="bg-gray-900 text-white border border-gray-700 rounded px-3 py-2"
+    >
+      <option value="sqlite">SQLite</option>
+      <option value="csv">CSV</option>
+      <option value="mongo">MongoDB</option>
+    </select>
+
+    {/* Dataset Selector (ONLY for CSV) */}
+    {selectedSource === "csv" && (
+      <select
+        value={selectedDataset}
+        onChange={(e) => setSelectedDataset(e.target.value)}
+        className="bg-gray-900 text-white border border-gray-700 rounded px-3 py-2"
+      >
+        {datasets.length === 0 ? (
+          <option disabled>No datasets loaded</option>
+        ) : (
+          datasets.map(ds => (
+            <option key={ds} value={ds}>
+              {ds}
+            </option>
+          ))
+        )}
+      </select>
+    )}
+  </div>
+
+  {/* CSV Upload (below dataset selector) */}
+  {selectedSource === "csv" && (
+    <div className="flex items-center gap-3 mt-3">
+      <input
+        type="file"
+        accept=".csv"
+        onChange={(e) => handleCSVUpload(e.target.files[0])}
+        className="text-sm"
+      />
+      {uploading && (
+        <span className="text-gray-400 text-sm">Uploading...</span>
+      )}
+    </div>
+  )}
+</div>
+
+
         {/* Chat area */}
         <main className="flex-1 overflow-y-auto pt-20 pb-24 flex items-center justify-center">
         <div className="w-full max-w-4xl mx-auto px-4 flex flex-col space-y-3">

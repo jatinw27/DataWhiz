@@ -1,5 +1,5 @@
 import express from "express";
-import { datasetManager } from "../index.js";
+import { datasetManager } from "../core/managers.js";
 
 const router = express.Router();
 

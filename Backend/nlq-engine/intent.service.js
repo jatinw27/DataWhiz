@@ -5,7 +5,8 @@ export function parseIntent(question = "") {
 
   if (
     q.includes("count") ||
-    q.includes("how many")
+    q.includes("how many") ||
+    q.includes("number of")
   ) {
     return "count";
   }

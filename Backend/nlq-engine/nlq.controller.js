@@ -87,7 +87,7 @@ export async function handleNLQ(req, res) {
     const selectedColumns = aggregation || columns.join(", ") || "*";
 
     if (intent === "count") {
-      sql = `SELECT COUNT(*) FROM ${table}`;
+      sql = `SELECT COUNT(*) as count FROM ${table}`;
     } else {
       sql = `SELECT ${selectedColumns} FROM ${table}`;
     }

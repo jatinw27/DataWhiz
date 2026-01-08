@@ -1,13 +1,25 @@
 export function toNaturalLanguage(rows) {
-    
-    if(!rows || rows.length === 0) {
-        return "No matching records were found.";
-    }
+  if (!rows || rows.length === 0) {
+    return "No results found.";
+  }
 
-    if ("name" in rows[0] && "age" in rows[0]) {
-        return rows
-            .map(r => `${r.name} is ${r.age} years old`)
-            .join(". ") + ".";
-    }
-    return `I found ${rows.length} result(s).`;
+  // 🔢 COUNT queries
+  if (rows.length === 1 && rows[0].count !== undefined) {
+    return `There are ${rows[0].count} records.`;
+  }
+
+  // 📊 AGGREGATION queries
+  if (rows.length === 1 && rows[0].value !== undefined) {
+    return `The result is ${rows[0].value}.`;
+  }
+
+  // 🧾 GENERIC RECORD LIST
+  return rows
+    .slice(0, 10) // prevent huge replies
+    .map(row => {
+      return Object.entries(row)
+        .map(([key, value]) => `${key}: ${value}`)
+        .join(", ");
+    })
+    .join(". ") + ".";
 }

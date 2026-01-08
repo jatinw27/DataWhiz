@@ -68,6 +68,11 @@ console.log("CSV TABLE NAME:", this.tableName);
     }
 
     // AGGREGATION
+  if (aggregation && aggregation.toUpperCase() === "COUNT") {
+  return [{ count: result.length }];
+}
+
+
     if (aggregation) {
       const match = aggregation.match(/(AVG|MIN|MAX|SUM)\((.+)\)/i);
 

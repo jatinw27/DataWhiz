@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import axios from 'axios';
 import { FaUserCircle } from 'react-icons/fa';
 
@@ -12,10 +12,16 @@ function Bot() {
     const [datasets, setDatasets] = useState([]);
     const [selectedDataset, setSelectedDataset] = useState("users");
     const [selectedSource, setSelectedSource] = useState("csv")
+    const bottomRef = useRef(null);
 
     const [sessionId] = useState(() => {
     return localStorage.getItem("myChatSession") || "user_" + Date.now();
 });
+
+
+    useEffect(() => {
+  bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+}, [msg, loading]);
 
     useEffect(() => {
       async function fetchDatasets() {
@@ -159,7 +165,7 @@ const handleCSVUpload = async (file) => {
     } else {
       // 🔹 NORMAL CHAT → AI CHATBOT
       res = await axios.post(
-        "https://datawhiz-production.up.railway.app/api/chatbot/message",
+        `${API_BASE}/api/chatbot/message`,
         {
           text: userText,
           sessionId: sessionId
@@ -285,6 +291,9 @@ const handleCSVUpload = async (file) => {
            
             </>
           )}
+
+           {/* 👇 AUTO-SCROLL TARGET */}
+              <div ref={bottomRef} />
         </div>
       </main>
 

@@ -1,7 +1,10 @@
 .env
 Backend/.env
 node_modules/
+uploads/
 # environment variables
 .env
 .env.local
 .env.*
+
+Frontend/.env

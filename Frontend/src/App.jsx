@@ -1,10 +1,14 @@
-import React from 'react'
-import Bot from './component/Bot.jsx';
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from "./pages/Home";
+import Chat from "./pages/Chat";
 
-function App() {
+export default function App() {
   return (
-    <div><Bot/></div>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/chat" element={<Chat />} />
+      </Routes>
+    </BrowserRouter>
+  );
 }
-
-export default App

@@ -1,6 +1,3 @@
-import { useEffect, useRef, useState } from "react";
-import { askNLQ, sendChatMessage } from "../services/api";
-
 export function useChat() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -19,25 +16,14 @@ export function useChat() {
 
   const isDataQuery = (text) => {
     const keywords = [
-      "show",
-      "list",
-      "get",
-      "fetch",
-      "users",
-      "data",
-      "records",
-      "older than",
-      "younger than",
-      "count",
-      "how many",
-      "average",
-      "avg",
+      "show","list","get","fetch","users","data",
+      "records","older than","younger than",
+      "count","how many","average","avg",
     ];
-
     return keywords.some(k => text.toLowerCase().includes(k));
   };
 
-  const sendMessage = async (text) => {
+  const sendMessage = async ({ text, source, dataset }) => {
     if (!text?.trim()) return;
 
     setMessages(prev => [...prev, { text, sender: "user" }]);
@@ -49,8 +35,8 @@ export function useChat() {
       if (isDataQuery(text)) {
         res = await askNLQ({
           question: text,
-          source: selectedSource,
-          dataset: selectedDataset,
+          source,
+          dataset,
         });
 
         setMessages(prev => [
@@ -68,7 +54,7 @@ export function useChat() {
           { text: res.data.botMsg, sender: "bot" },
         ]);
       }
-    } catch (err) {
+    } catch {
       setMessages(prev => [
         ...prev,
         { text: "Something went wrong. Please try again.", sender: "bot" },
@@ -78,10 +64,5 @@ export function useChat() {
     }
   };
 
-  return {
-    messages,
-    loading,
-    sendMessage,
-    bottomRef,
-  };
+  return { messages, loading, sendMessage, bottomRef };
 }

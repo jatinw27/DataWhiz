@@ -11,8 +11,13 @@ export default function ChatWindow({ messages, loading, bottomRef }) {
       )}
 
       {messages.map((msg, i) => (
-        <MessageBubble key={i} {...msg} />
-      ))}
+  <MessageBubble
+    key={i}
+    {...msg}
+    prevSender={messages[i - 1]?.sender}
+  />
+))}
+
 
       {loading && <Loader text="DataWhiz is thinking..." />}
 

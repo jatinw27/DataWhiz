@@ -15,10 +15,12 @@ export default function Chat() {
 
   return (
     <div className="min-h-screen bg-[#0d0d0d] text-white">
+      
       <Header />
 
       {/* MODE TOGGLE */}
       <div className="flex gap-3 px-6 mt-20">
+        
         <button
           onClick={() => setMode("data")}
           className={`px-4 py-2 rounded ${
@@ -27,15 +29,7 @@ export default function Chat() {
         >
           📊 Data Chat
         </button>
-<button
-  onClick={() => {
-    localStorage.removeItem("chatMessages");
-    window.location.reload();
-  }}
-  className="text-sm text-red-400 px-6 mt-2"
->
-  Clear Chat
-</button>
+
 
         <button
           onClick={() => setMode("chat")}
@@ -67,6 +61,7 @@ export default function Chat() {
           })
         }
       />
+      
     </div>
   );
 }

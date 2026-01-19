@@ -27,6 +27,15 @@ export default function Chat() {
         >
           📊 Data Chat
         </button>
+<button
+  onClick={() => {
+    localStorage.removeItem("chatMessages");
+    window.location.reload();
+  }}
+  className="text-sm text-red-400 px-6 mt-2"
+>
+  Clear Chat
+</button>
 
         <button
           onClick={() => setMode("chat")}

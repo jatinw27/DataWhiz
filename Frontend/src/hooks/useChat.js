@@ -8,6 +8,14 @@ export function useChat() {
 
   const sessionId =
     localStorage.getItem("myChatSession") || "user_" + Date.now();
+useEffect(() => {
+  const saved = localStorage.getItem("chatMessages");
+  if (saved) setMessages(JSON.parse(saved));
+}, []);
+
+useEffect(() => {
+  localStorage.setItem("chatMessages", JSON.stringify(messages));
+}, [messages]);
 
   useEffect(() => {
     localStorage.setItem("myChatSession", sessionId);
@@ -25,47 +33,54 @@ export function useChat() {
     ];
     return keywords.some(k => text.toLowerCase().includes(k));
   };
+const getTime = () =>
+  new Date().toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
 const sendMessage = async ({ text, mode, source, dataset }) => {
   if (!text?.trim()) return;
 
-  setMessages(prev => [...prev, { text, sender: "user" }]);
+  setMessages(prev => [
+    ...prev,
+    { text, sender: "user", time: getTime() },
+  ]);
+
   setLoading(true);
 
   try {
     let res;
 
     if (mode === "data") {
-      res = await askNLQ({
-        question: text,
-        source,
-        dataset,
-      });
+      res = await askNLQ({ question: text, source, dataset });
 
       setMessages(prev => [
         ...prev,
-        { text: res.data.answer, sender: "bot" },
+        { text: res.data.answer, sender: "bot", time: getTime() },
       ]);
     } else {
-      res = await sendChatMessage({
-        text,
-        sessionId,
-      });
+      res = await sendChatMessage({ text, sessionId });
 
       setMessages(prev => [
         ...prev,
-        { text: res.data.botMsg, sender: "bot" },
+        { text: res.data.botMsg, sender: "bot", time: getTime() },
       ]);
     }
   } catch {
     setMessages(prev => [
       ...prev,
-      { text: "Something went wrong. Please try again.", sender: "bot" },
+      {
+        text: "Something went wrong. Please try again.",
+        sender: "bot",
+        time: getTime(),
+      },
     ]);
   } finally {
     setLoading(false);
   }
 };
+
 
 
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { fetchDatasets, uploadCSV } from "../services/api";
+import { fetchDatasets, uploadCSV } from "../services/api.js";
 
 export function useDatasets() {
   const [datasets, setDatasets] = useState([]);

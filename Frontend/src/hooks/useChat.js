@@ -1,3 +1,6 @@
+import { useState, useRef, useEffect } from "react";
+import { askNLQ, sendChatMessage } from "../services/api";
+
 export function useChat() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -23,46 +26,48 @@ export function useChat() {
     return keywords.some(k => text.toLowerCase().includes(k));
   };
 
-  const sendMessage = async ({ text, source, dataset }) => {
-    if (!text?.trim()) return;
+const sendMessage = async ({ text, mode, source, dataset }) => {
+  if (!text?.trim()) return;
 
-    setMessages(prev => [...prev, { text, sender: "user" }]);
-    setLoading(true);
+  setMessages(prev => [...prev, { text, sender: "user" }]);
+  setLoading(true);
 
-    try {
-      let res;
+  try {
+    let res;
 
-      if (isDataQuery(text)) {
-        res = await askNLQ({
-          question: text,
-          source,
-          dataset,
-        });
+    if (mode === "data") {
+      res = await askNLQ({
+        question: text,
+        source,
+        dataset,
+      });
 
-        setMessages(prev => [
-          ...prev,
-          { text: res.data.answer, sender: "bot" },
-        ]);
-      } else {
-        res = await sendChatMessage({
-          text,
-          sessionId,
-        });
-
-        setMessages(prev => [
-          ...prev,
-          { text: res.data.botMsg, sender: "bot" },
-        ]);
-      }
-    } catch {
       setMessages(prev => [
         ...prev,
-        { text: "Something went wrong. Please try again.", sender: "bot" },
+        { text: res.data.answer, sender: "bot" },
       ]);
-    } finally {
-      setLoading(false);
+    } else {
+      res = await sendChatMessage({
+        text,
+        sessionId,
+      });
+
+      setMessages(prev => [
+        ...prev,
+        { text: res.data.botMsg, sender: "bot" },
+      ]);
     }
-  };
+  } catch {
+    setMessages(prev => [
+      ...prev,
+      { text: "Something went wrong. Please try again.", sender: "bot" },
+    ]);
+  } finally {
+    setLoading(false);
+  }
+};
+
+
 
   return { messages, loading, sendMessage, bottomRef };
 }

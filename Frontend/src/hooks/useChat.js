@@ -68,12 +68,14 @@ export function useChat() {
 
         return [
           ...updated,
-          {
-            text: res.data.answer || res.data.botMsg,
-            sender: "bot",
-            status: "sent",
-            time: getTime(),
-          },
+         {
+  text: res.data.answer || res.data.botMsg,
+  sender: "bot",
+  status: "sent",
+  time: getTime(),
+  data: res.data.data || [],
+}
+,
         ];
       });
     } catch {

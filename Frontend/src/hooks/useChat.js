@@ -8,14 +8,23 @@ export function useChat() {
 
   const sessionId =
     localStorage.getItem("myChatSession") || "user_" + Date.now();
-useEffect(() => {
-  const saved = localStorage.getItem("chatMessages");
-  if (saved) setMessages(JSON.parse(saved));
-}, []);
 
-useEffect(() => {
-  localStorage.setItem("chatMessages", JSON.stringify(messages));
-}, [messages]);
+  /* ---------- Helpers ---------- */
+  const getTime = () =>
+    new Date().toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+  /* ---------- Persist chat ---------- */
+  useEffect(() => {
+    const saved = localStorage.getItem("chatMessages");
+    if (saved) setMessages(JSON.parse(saved));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem("chatMessages", JSON.stringify(messages));
+  }, [messages]);
 
   useEffect(() => {
     localStorage.setItem("myChatSession", sessionId);
@@ -25,64 +34,64 @@ useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  const isDataQuery = (text) => {
-    const keywords = [
-      "show","list","get","fetch","users","data",
-      "records","older than","younger than",
-      "count","how many","average","avg",
-    ];
-    return keywords.some(k => text.toLowerCase().includes(k));
-  };
-const getTime = () =>
-  new Date().toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  /* ---------- Logic ---------- */
+  const sendMessage = async ({ text, mode, source, dataset }) => {
+    if (!text?.trim()) return;
 
-const sendMessage = async ({ text, mode, source, dataset }) => {
-  if (!text?.trim()) return;
+    const userMessage = {
+      text,
+      sender: "user",
+      status: "sending",
+      time: getTime(),
+    };
 
-  setMessages(prev => [
-    ...prev,
-    { text, sender: "user", time: getTime() },
-  ]);
+    setMessages(prev => [...prev, userMessage]);
+    setLoading(true);
 
-  setLoading(true);
+    try {
+      let res;
 
-  try {
-    let res;
+      if (mode === "data") {
+        res = await askNLQ({ question: text, source, dataset });
+      } else {
+        res = await sendChatMessage({ text, sessionId });
+      }
 
-    if (mode === "data") {
-      res = await askNLQ({ question: text, source, dataset });
+      setMessages(prev => {
+        const updated = [...prev];
 
-      setMessages(prev => [
-        ...prev,
-        { text: res.data.answer, sender: "bot", time: getTime() },
-      ]);
-    } else {
-      res = await sendChatMessage({ text, sessionId });
+        // ✅ mark last user message as SENT
+        updated[updated.length - 1] = {
+          ...updated[updated.length - 1],
+          status: "sent",
+        };
 
-      setMessages(prev => [
-        ...prev,
-        { text: res.data.botMsg, sender: "bot", time: getTime() },
-      ]);
+        return [
+          ...updated,
+          {
+            text: res.data.answer || res.data.botMsg,
+            sender: "bot",
+            status: "sent",
+            time: getTime(),
+          },
+        ];
+      });
+    } catch {
+      setMessages(prev => {
+        const updated = [...prev];
+
+        // ❌ mark last user message as ERROR
+        updated[updated.length - 1] = {
+          ...updated[updated.length - 1],
+          status: "error",
+        };
+
+        return updated;
+      });
+    } finally {
+      setLoading(false);
     }
-  } catch {
-    setMessages(prev => [
-      ...prev,
-      {
-        text: "Something went wrong. Please try again.",
-        sender: "bot",
-        time: getTime(),
-      },
-    ]);
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
+  };
 
   return { messages, loading, sendMessage, bottomRef };
 }

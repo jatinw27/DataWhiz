@@ -1,6 +1,6 @@
-export default function Loader({ text = "Loading..." }) {
+export default function Loader({ text }) {
   return (
-    <div className="text-gray-400 text-sm px-4 py-2">
+    <div className="text-gray-400 text-sm mt-3 animate-pulse">
       {text}
     </div>
   );

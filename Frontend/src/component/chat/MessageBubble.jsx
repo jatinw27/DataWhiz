@@ -1,23 +1,20 @@
-export default function MessageBubble({ text, sender, time, status, isGrouped }) {
+export default function MessageBubble({ text, sender, time }) {
   const isUser = sender === "user";
 
   return (
-    <div
-      className={`max-w-[80%] px-4 py-2 rounded-xl ${
-        isGrouped ? "mt-1" : "mt-4"
-      } ${
-        isUser
-          ? "bg-blue-600 text-white ml-auto"
-          : "bg-gray-800 text-gray-100"
-      }`}
-    >
-      <div className="text-sm">{text}</div>
-
-      {/* Meta info */}
-      <div className="text-[10px] text-gray-300 mt-1 text-right">
-        {time}
-        {isUser && status === "sending" && " • sending"}
-        {isUser && status === "error" && " • failed"}
+    <div className={`mb-4 flex ${isUser ? "justify-end" : "justify-start"}`}>
+      <div
+        className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm leading-relaxed
+        ${isUser
+          ? "bg-blue-600 text-white rounded-br-sm"
+          : "bg-gray-800 text-gray-100 rounded-bl-sm"}`}
+      >
+        <div>{text}</div>
+        {time && (
+          <div className="text-xs text-gray-400 mt-1 text-right">
+            {time}
+          </div>
+        )}
       </div>
     </div>
   );

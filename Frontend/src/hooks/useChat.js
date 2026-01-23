@@ -35,65 +35,70 @@ export function useChat() {
   }, [messages, loading]);
 
   /* ---------- Logic ---------- */
-  const sendMessage = async ({ text, mode, source, dataset }) => {
-    if (!text?.trim()) return;
+const sendMessage = async ({ text, mode, source, dataset }) => {
+  if (!text?.trim()) return;
 
-    const userMessage = {
-      text,
-      sender: "user",
-      status: "sending",
-      time: getTime(),
-    };
-
-    setMessages(prev => [...prev, userMessage]);
-    setLoading(true);
-
-    try {
-      let res;
-
-      if (mode === "data") {
-        res = await askNLQ({ question: text, source, dataset });
-      } else {
-        res = await sendChatMessage({ text, sessionId });
-      }
-
-      setMessages(prev => {
-        const updated = [...prev];
-
-        // ✅ mark last user message as SENT
-        updated[updated.length - 1] = {
-          ...updated[updated.length - 1],
-          status: "sent",
-        };
-
-        return [
-          ...updated,
-         {
-  text: res.data.answer || res.data.botMsg,
-  sender: "bot",
-  status: "sent",
-  time: getTime(),
-  data: res.data.data || [],
-}
-,
-        ];
-      });
-    } catch {
-      setMessages(prev => {
-        const updated = [...prev];
-
-        // ❌ mark last user message as ERROR
-        updated[updated.length - 1] = {
-          ...updated[updated.length - 1],
-          status: "error",
-        };
-
-        return updated;
-      });
-    } finally {
-      setLoading(false);
-    }
+  const userMessage = {
+    text,
+    sender: "user",
+    status: "sending",
+    time: getTime(),
   };
+
+  setMessages(prev => [...prev, userMessage]);
+  setLoading(true);
+
+  try {
+    let res;
+
+    if (mode === "data") {
+      res = await askNLQ({ question: text, source, dataset });
+    } else {
+      res = await sendChatMessage({ text, sessionId });
+    }
+
+    let botText = "";
+    let botData = [];
+
+    if (mode === "data") {
+      botText = res.data.answer;
+      botData = res.data.data || [];
+    } else {
+      botText = res.data.botMsg;
+    }
+
+    setMessages(prev => {
+      const updated = [...prev];
+
+      updated[updated.length - 1] = {
+        ...updated[updated.length - 1],
+        status: "sent",
+      };
+
+      return [
+        ...updated,
+        {
+          text: botText,
+          sender: "bot",
+          time: getTime(),
+          data: botData,
+        },
+      ];
+    });
+  } catch {
+    setMessages(prev => {
+      const updated = [...prev];
+      updated[updated.length - 1] = {
+        ...updated[updated.length - 1],
+        status: "error",
+      };
+      return updated;
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return { messages, loading, sendMessage, bottomRef };
 }

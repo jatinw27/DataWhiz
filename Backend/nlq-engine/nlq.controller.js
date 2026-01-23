@@ -97,11 +97,12 @@ export async function handleNLQ(req, res) {
     resultRows = await dataSource.runQuery(sql);
   }
 
-  return res.json({
-    question: finalQuestion,
-    generatedQuery,
-    answer: toNaturalLanguage(resultRows),
-    data: resultRows,
-    source
-  });
+ return res.json({
+  question: finalQuestion,
+  generatedQuery,
+  answer: toNaturalLanguage(resultRows),
+  data: resultRows,
+  source
+});
+
 }

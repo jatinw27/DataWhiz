@@ -3,17 +3,17 @@ export function toNaturalLanguage(rows) {
 
   const row = rows[0];
 
+  // ✅ Handle COUNT(*) edge cases
   if (row.count !== undefined) {
     return `There are ${row.count} records.`;
   }
 
-  if (row.value !== undefined) {
-    return `The result is ${row.value}.`;
+  if (row["count(*)"] !== undefined) {
+    return `There are ${row["count(*)"]} records.`;
   }
 
-  // 👇 NEW: handle full table results
-  if (rows.length > 3) {
-    return `I found ${rows.length} matching records. You can refine your question for details.`;
+  if (row.value !== undefined) {
+    return `The result is ${row.value}.`;
   }
 
   return rows

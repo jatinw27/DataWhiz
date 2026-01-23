@@ -2,12 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { askNLQ, sendChatMessage } from "../services/api";
 
 export function useChat() {
-  const [messages, setMessages] = useState([]);
+  const [sessions, setSessions] = useState({});
+  const [activeSessionId, setActiveSessionId] = useState(null);
   const [loading, setLoading] = useState(false);
   const bottomRef = useRef(null);
-
-  const sessionId =
-    localStorage.getItem("myChatSession") || "user_" + Date.now();
 
   /* ---------- Helpers ---------- */
   const getTime = () =>
@@ -16,89 +14,134 @@ export function useChat() {
       minute: "2-digit",
     });
 
-  /* ---------- Persist chat ---------- */
-  useEffect(() => {
-    const saved = localStorage.getItem("chatMessages");
-    if (saved) setMessages(JSON.parse(saved));
-  }, []);
+  /* ---------- Create new session ---------- */
+  const createNewSession = () => {
+    const id = "chat_" + Date.now();
 
-  useEffect(() => {
-    localStorage.setItem("chatMessages", JSON.stringify(messages));
-  }, [messages]);
+    const newSession = {
+      id,
+      title: "New Chat",
+      messages: [],
+      createdAt: Date.now(),
+    };
 
-  useEffect(() => {
-    localStorage.setItem("myChatSession", sessionId);
-  }, [sessionId]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
-
-  /* ---------- Logic ---------- */
-const sendMessage = async ({ text, mode, source, dataset }) => {
-  if (!text?.trim()) return;
-
-  const userMessage = {
-    text,
-    sender: "user",
-    status: "sending",
-    time: getTime(),
+    setSessions(prev => ({ ...prev, [id]: newSession }));
+    setActiveSessionId(id);
   };
 
-  setMessages(prev => [...prev, userMessage]);
-  setLoading(true);
+  /* ---------- Load sessions ---------- */
+  useEffect(() => {
+    const saved = localStorage.getItem("chatSessions");
+    const active = localStorage.getItem("activeChatSession");
 
-  try {
-    let res;
-
-    if (mode === "data") {
-      res = await askNLQ({ question: text, source, dataset });
+    if (saved) {
+      setSessions(JSON.parse(saved));
+      setActiveSessionId(active);
     } else {
-      res = await sendChatMessage({ text, sessionId });
+      createNewSession();
     }
+  }, []);
 
-    let botText = "";
-    let botData = [];
+  /* ---------- Persist sessions ---------- */
+  useEffect(() => {
+    localStorage.setItem("chatSessions", JSON.stringify(sessions));
+    localStorage.setItem("activeChatSession", activeSessionId);
+  }, [sessions, activeSessionId]);
 
-    if (mode === "data") {
-      botText = res.data.answer;
-      botData = res.data.data || [];
-    } else {
-      botText = res.data.botMsg;
-    }
+  /* ---------- Auto scroll ---------- */
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [sessions, loading]);
 
-    setMessages(prev => {
-      const updated = [...prev];
+  /* ---------- Send message ---------- */
+  const sendMessage = async ({ text, mode, source, dataset }) => {
+    if (!text?.trim() || !activeSessionId) return;
 
-      updated[updated.length - 1] = {
-        ...updated[updated.length - 1],
-        status: "sent",
-      };
+    const userMessage = {
+      text,
+      sender: "user",
+      status: "sending",
+      time: getTime(),
+    };
 
-      return [
-        ...updated,
-        {
-          text: botText,
-          sender: "bot",
-          time: getTime(),
-          data: botData,
+    setSessions(prev => {
+      const session = prev[activeSessionId];
+      return {
+        ...prev,
+        [activeSessionId]: {
+          ...session,
+          messages: [...session.messages, userMessage],
         },
-      ];
-    });
-  } catch {
-    setMessages(prev => {
-      const updated = [...prev];
-      updated[updated.length - 1] = {
-        ...updated[updated.length - 1],
-        status: "error",
       };
-      return updated;
     });
-  } finally {
-    setLoading(false);
-  }
-};
 
+    setLoading(true);
 
-  return { messages, loading, sendMessage, bottomRef };
+    try {
+      let res;
+
+      if (mode === "data") {
+        res = await askNLQ({ question: text, source, dataset });
+      } else {
+        res = await sendChatMessage({ text });
+      }
+
+      const botMessage = {
+        text: res.data.answer || res.data.botMsg,
+        sender: "bot",
+        time: getTime(),
+        data: res.data.data || [],
+        query: res.data.generatedQuery || null,
+      };
+
+      setSessions(prev => {
+        const session = prev[activeSessionId];
+        const updatedMessages = [...session.messages];
+
+        updatedMessages[updatedMessages.length - 1] = {
+          ...updatedMessages[updatedMessages.length - 1],
+          status: "sent",
+        };
+
+        return {
+          ...prev,
+          [activeSessionId]: {
+            ...session,
+            messages: [...updatedMessages, botMessage],
+          },
+        };
+      });
+    } catch {
+      setSessions(prev => {
+        const session = prev[activeSessionId];
+        const updatedMessages = [...session.messages];
+
+        updatedMessages[updatedMessages.length - 1] = {
+          ...updatedMessages[updatedMessages.length - 1],
+          status: "error",
+        };
+
+        return {
+          ...prev,
+          [activeSessionId]: {
+            ...session,
+            messages: updatedMessages,
+          },
+        };
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return {
+    sessions,
+    activeSessionId,
+    setActiveSessionId,
+    createNewSession,
+    messages: sessions[activeSessionId]?.messages || [],
+    loading,
+    sendMessage,
+    bottomRef,
+  };
 }

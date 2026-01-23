@@ -1,4 +1,4 @@
-export default function MessageBubble({ text, sender, data, time }) {
+export default function MessageBubble({ text, sender, data, time, query }) {
   const isUser = sender === "user";
 
   return (
@@ -35,9 +35,20 @@ export default function MessageBubble({ text, sender, data, time }) {
               ))}
             </tbody>
           </table>
+          
         </div>
+        
       )}
-
+{query && (
+  <details className="mt-2 text-sm">
+    <summary className="cursor-pointer text-green-400 hover:underline">
+      View generated query
+    </summary>
+    <pre className="mt-2 bg-black/60 p-3 rounded text-xs overflow-x-auto border border-gray-700">
+      {query}
+    </pre>
+  </details>
+)}
       {time && (
         <div className="text-[10px] text-gray-400 mt-1 text-right">
           {time}

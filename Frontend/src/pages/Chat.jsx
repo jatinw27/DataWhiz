@@ -3,7 +3,7 @@ import Header from "../component/Header.jsx";
 import ChatWindow from "../component/chat/ChatWindow.jsx";
 import DatasetSelector from "../component/chat/DatasetSelector.jsx";
 import InputBar from "../component/chat/InputBar.jsx";
-import ChatSessions from "../component/chat/ChatSessions.jsx"; // ✅ REQUIRED
+import ChatSessions from "../component/chat/ChatSessions.jsx";
 import { useChat } from "../hooks/useChat";
 import { useDatasets } from "../hooks/useDatasets";
 
@@ -17,14 +17,19 @@ export default function Chat() {
   return (
     <div className="flex h-screen bg-[#0d0d0d] text-white">
       
-      {/* 🟩 LEFT SIDEBAR */}
-      <ChatSessions {...chat} />
+      {/* LEFT SIDEBAR */}
+      <ChatSessions
+        sessions={chat.sessions}
+        activeSessionId={chat.activeSessionId}
+        setActiveSessionId={chat.setActiveSessionId}
+        createNewSession={chat.createNewSession}
+      />
 
-      {/* 🟦 RIGHT CHAT AREA */}
-      <div className="flex-1 flex flex-col">
+      {/* MAIN CHAT AREA */}
+      <div className="flex flex-col flex-1">
         <Header />
 
-        {/* 🔥 Mode Toggle */}
+        {/* MODE TOGGLE */}
         <div className="px-6 pt-4 flex gap-3">
           <button
             onClick={() => setChatMode("data")}
@@ -49,21 +54,19 @@ export default function Chat() {
           </button>
         </div>
 
-        {/* Dataset selector only for Data mode */}
+        {/* DATASET SELECTOR (only for data mode) */}
         {chatMode === "data" && (
-          <div className="mt-3">
-            <DatasetSelector
-              selectedSource={selectedSource}
-              setSelectedSource={setSelectedSource}
-              {...datasets}
-            />
-          </div>
+          <DatasetSelector
+            selectedSource={selectedSource}
+            setSelectedSource={setSelectedSource}
+            {...datasets}
+          />
         )}
 
-        {/* Chat messages */}
+        {/* CHAT WINDOW */}
         <ChatWindow {...chat} />
 
-        {/* Input */}
+        {/* INPUT */}
         <div className="border-t border-gray-800">
           <InputBar
             loading={chat.loading}

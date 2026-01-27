@@ -1,44 +1,37 @@
-export default function MessageBubble({ text, sender, data, time, query }) {
+export default function MessageBubble({ text, sender, data, time }) {
   const isUser = sender === "user";
 
   return (
     <div
-      className={`mb-4 flex ${isUser ? "justify-end" : "justify-start"}`}
+      className={`flex ${isUser ? "justify-end" : "justify-start"} mb-2`}
     >
       <div
-        className={`max-w-[70%] px-4 py-3 rounded-2xl shadow-sm ${
+        className={`max-w-[70%] px-4 py-2 rounded-xl text-sm ${
           isUser
-            ? "bg-blue-600 text-white rounded-br-sm"
-            : "bg-gray-800 text-gray-100 rounded-bl-sm"
+            ? "bg-blue-600 text-white rounded-br-none"
+            : "bg-gray-800 text-gray-100 rounded-bl-none"
         }`}
       >
-        <div className="text-sm leading-relaxed">{text}</div>
+        {text}
 
-        {/* Data table */}
         {Array.isArray(data) && data.length > 0 && (
-          <div className="mt-4 overflow-x-auto border border-gray-700 rounded-lg">
-            <table className="text-sm w-full">
+          <div className="mt-3 overflow-x-auto border border-gray-700 rounded">
+            <table className="text-xs w-full">
               <thead className="bg-gray-900">
                 <tr>
-                  {Object.keys(data[0]).map(key => (
-                    <th
-                      key={key}
-                      className="px-3 py-2 text-left border-b border-gray-700"
-                    >
-                      {key}
+                  {Object.keys(data[0]).map(k => (
+                    <th key={k} className="px-2 py-1">
+                      {k}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {data.map((row, i) => (
-                  <tr key={i} className="hover:bg-gray-900/40">
-                    {Object.values(row).map((val, j) => (
-                      <td
-                        key={j}
-                        className="px-3 py-2 border-t border-gray-800"
-                      >
-                        {String(val)}
+                  <tr key={i}>
+                    {Object.values(row).map((v, j) => (
+                      <td key={j} className="px-2 py-1">
+                        {String(v)}
                       </td>
                     ))}
                   </tr>
@@ -48,20 +41,8 @@ export default function MessageBubble({ text, sender, data, time, query }) {
           </div>
         )}
 
-        {/* Generated query */}
-        {query && (
-          <details className="mt-3 text-xs">
-            <summary className="cursor-pointer text-green-400 hover:underline">
-              View generated query
-            </summary>
-            <pre className="mt-2 bg-black/60 p-3 rounded border border-gray-700 overflow-x-auto">
-              {query}
-            </pre>
-          </details>
-        )}
-
         {time && (
-          <div className="text-[10px] text-gray-400 mt-2 text-right">
+          <div className="text-[10px] text-gray-400 mt-1 text-right">
             {time}
           </div>
         )}

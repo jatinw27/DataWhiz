@@ -22,8 +22,12 @@ export default function InputBar({ onSend, loading }) {
         <button
           onClick={handleSend}
           disabled={loading}
-          className="bg-green-600 hover:bg-green-700 disabled:opacity-50 px-5 py-3 rounded-xl font-medium"
-        >
+         className={`ml-3 px-4 rounded transition
+    ${loading
+      ? "bg-gray-600 cursor-not-allowed"
+      : "bg-green-600 hover:bg-green-700"}
+  `}
+>
           Send
         </button>
       </div>

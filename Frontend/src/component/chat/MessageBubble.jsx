@@ -4,6 +4,7 @@ export default function MessageBubble({
   data,
   time,
   query,
+  status,
   isGrouped,
 }) {
   const isUser = sender === "user";
@@ -63,12 +64,26 @@ export default function MessageBubble({
           )}
         </div>
       )}
+{sender === "user" && (
+  <div className="text-[10px] text-right mt-1">
+    {status === "sending" && (
+      <span className="text-gray-300">Sending…</span>
+    )}
+    {status === "sent" && (
+      <span className="text-gray-400">Sent</span>
+    )}
+    {status === "error" && (
+      <span className="text-red-400">Failed</span>
+    )}
+  </div>
+)}
 
-      {time && (
+      {sender !== "user" && time && (
         <div className="text-[10px] text-gray-400 mt-1 text-right">
           {time}
         </div>
       )}
     </div>
+    
   );
 }

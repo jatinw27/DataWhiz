@@ -18,13 +18,14 @@ export default function Chat() {
     <div className="flex h-screen bg-[#0d0d0d] text-white">
       
       {/* LEFT SIDEBAR */}
+      <div className="hidden md:block">
       <ChatSessions
         sessions={chat.sessions}
         activeSessionId={chat.activeSessionId}
         setActiveSessionId={chat.setActiveSessionId}
         createNewSession={chat.createNewSession}
       />
-
+      </div>
       {/* MAIN CHAT AREA */}
       <div className="flex flex-col flex-1">
         <Header />

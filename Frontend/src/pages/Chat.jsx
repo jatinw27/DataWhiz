@@ -56,13 +56,19 @@ export default function Chat() {
         </div>
 
         {/* DATASET SELECTOR (only for data mode) */}
-        {chatMode === "data" && (
-          <DatasetSelector
-            selectedSource={selectedSource}
-            setSelectedSource={setSelectedSource}
-            {...datasets}
-          />
-        )}
+       {chatMode === "data" && (
+  <DatasetSelector
+    selectedSource={selectedSource}
+    setSelectedSource={setSelectedSource}
+    selectedDataset={datasets.selectedDataset}
+    setSelectedDataset={datasets.setSelectedDataset}
+    datasets={datasets.datasets}
+    addDataset={datasets.addDataset}          
+    setMongoUri={datasets.setMongoUri}        
+    setSqliteFile={datasets.setSqliteFile}    
+  />
+)}
+
 
         {/* CHAT WINDOW */}
         <ChatWindow {...chat} />

@@ -1,42 +1,34 @@
 import { useEffect, useState } from "react";
-import { fetchDatasets, uploadCSV } from "../services/api.js";
 
 export function useDatasets() {
   const [datasets, setDatasets] = useState([]);
-  const [selectedDataset, setSelectedDataset] = useState("users");
-  const [uploading, setUploading] = useState(false);
+  const [selectedDataset, setSelectedDataset] = useState("");
+  const [mongoUri, setMongoUri] = useState("");
+const [sqliteFile, setSqliteFile] = useState(null);
 
   useEffect(() => {
-    fetchDatasets()
-      .then(res => {
-        setDatasets(res.data.datasets || []);
-        if (res.data.datasets?.length) {
-          setSelectedDataset(res.data.datasets[0]);
-        }
-      })
-      .catch(console.error);
+    const saved = JSON.parse(localStorage.getItem("datasets") || "[]");
+    setDatasets(saved);
+    setSelectedDataset(saved[0] || "");
   }, []);
 
-  const uploadFile = async (file) => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-      setUploading(true);
-      await uploadCSV(formData);
-      const res = await fetchDatasets();
-      setDatasets(res.data.datasets || []);
-      setSelectedDataset(res.data.datasets[0]);
-    } finally {
-      setUploading(false);
-    }
+  const addDataset = (name) => {
+    setDatasets(prev => {
+      const updated = [...new Set([name, ...prev])];
+      localStorage.setItem("datasets", JSON.stringify(updated));
+      return updated;
+    });
+    setSelectedDataset(name);
   };
 
   return {
     datasets,
     selectedDataset,
     setSelectedDataset,
-    uploading,
-    uploadFile,
+    addDataset,
+    mongoUri,
+  setMongoUri,
+  sqliteFile,
+  setSqliteFile,
   };
 }

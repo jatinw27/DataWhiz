@@ -1,47 +1,51 @@
 export default function DatasetSelector({
   selectedSource,
   setSelectedSource,
-  datasets,
   selectedDataset,
   setSelectedDataset,
-  uploadFile,
-  uploading,
+  datasets,
 }) {
   return (
-    <div className="flex gap-3 px-6 mt-24 items-center">
-      {/* Source Selector */}
+    <div className="px-6 py-4 flex gap-4 items-center">
+
+      {/* SOURCE */}
       <select
         value={selectedSource}
-        onChange={(e) => setSelectedSource(e.target.value)}
-        className="bg-gray-900 text-white border border-gray-700 rounded px-3 py-2"
+        onChange={e => setSelectedSource(e.target.value)}
+        className="bg-gray-900 border border-gray-700 px-3 py-2 rounded"
       >
-        <option value="sqlite">SQLite</option>
         <option value="csv">CSV</option>
+        <option value="sqlite">SQLite</option>
         <option value="mongo">MongoDB</option>
       </select>
 
-      {/* Dataset selector only for CSV */}
+      {/* CSV */}
       {selectedSource === "csv" && (
-        <select
-          value={selectedDataset}
-          onChange={(e) => setSelectedDataset(e.target.value)}
-          className="bg-gray-900 text-white border border-gray-700 rounded px-3 py-2"
-        >
-          {datasets.map(ds => (
-            <option key={ds} value={ds}>
-              {ds}
-            </option>
-          ))}
-        </select>
+        <>
+          <select
+            value={selectedDataset}
+            onChange={e => setSelectedDataset(e.target.value)}
+            className="bg-gray-900 border border-gray-700 px-3 py-2 rounded"
+          >
+            {datasets.map(d => (
+              <option key={d} value={d}>{d}</option>
+            ))}
+          </select>
+
+          <input type="file" accept=".csv" />
+        </>
       )}
 
-      {/* Upload */}
-      {selectedSource === "csv" && (
+      {/* SQLITE */}
+      {selectedSource === "sqlite" && (
+        <input type="file" accept=".db,.sqlite" />
+      )}
+
+      {/* MONGO */}
+      {selectedSource === "mongo" && (
         <input
-          type="file"
-          accept=".csv"
-          disabled={uploading}
-          onChange={(e) => uploadFile(e.target.files[0])}
+          placeholder="MongoDB connection URI"
+          className="bg-gray-900 border border-gray-700 px-3 py-2 rounded w-96"
         />
       )}
     </div>

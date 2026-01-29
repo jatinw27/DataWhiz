@@ -41,10 +41,7 @@ export default function ChatSessions({
                   autoFocus
                   value={title}
                   onChange={e => setTitle(e.target.value)}
-                  onBlur={() => {
-                    renameSession(session.id, title);
-                    setEditingId(null);
-                  }}
+                  onBlur={() => setEditingId(null)}
                   onKeyDown={e => {
                     if (e.key === "Enter") {
                       renameSession(session.id, title);

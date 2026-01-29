@@ -142,18 +142,6 @@ const deleteSession = (id) => {
       const session = prev[activeSessionId];
       const isFirstMessage = session.messages.length === 0;
 
-      const deleteSession = (id) => {
-  setSessions(prev => {
-    const copy = { ...prev };
-    delete copy[id];
-
-    const remainingIds = Object.keys(copy);
-    setActiveSessionId(remainingIds[0] || null);
-
-    return copy;
-  });
-};
-
       return {
         ...prev,
         [activeSessionId]: {

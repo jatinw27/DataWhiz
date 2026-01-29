@@ -1,14 +1,23 @@
+import { useEffect } from "react";
 export default function DatasetSelector({
   selectedSource,
   setSelectedSource,
   selectedDataset,
   setSelectedDataset,
   datasets,
+  addDataset,          // ✅ IMPORTANT
+  setMongoUri,         // ✅ for mongo
+  setSqliteFile,       // ✅ for sqlite
 }) {
-  return (
-    <div className="px-6 py-4 flex gap-4 items-center">
 
-      {/* SOURCE */}
+  useEffect(() => {
+  setSelectedDataset("");
+}, [selectedSource]);
+
+  return (
+    <div className="px-6 py-4 flex gap-4 items-center flex-wrap">
+
+      {/* SOURCE SELECT */}
       <select
         value={selectedSource}
         onChange={e => setSelectedSource(e.target.value)}
@@ -19,7 +28,7 @@ export default function DatasetSelector({
         <option value="mongo">MongoDB</option>
       </select>
 
-      {/* CSV */}
+      {/* CSV MODE */}
       {selectedSource === "csv" && (
         <>
           <select
@@ -27,25 +36,43 @@ export default function DatasetSelector({
             onChange={e => setSelectedDataset(e.target.value)}
             className="bg-gray-900 border border-gray-700 px-3 py-2 rounded"
           >
+            {datasets.length === 0 && (
+              <option>No datasets</option>
+            )}
             {datasets.map(d => (
               <option key={d} value={d}>{d}</option>
             ))}
           </select>
 
-          <input type="file" accept=".csv" />
+          <input
+            type="file"
+            accept=".csv"
+            onChange={(e) => {
+              const file = e.target.files[0];
+              if (file) addDataset(file.name);   // ✅ FIX
+            }}
+          />
         </>
       )}
 
-      {/* SQLITE */}
+      {/* SQLITE MODE */}
       {selectedSource === "sqlite" && (
-        <input type="file" accept=".db,.sqlite" />
+        <input
+          type="file"
+          accept=".db,.sqlite"
+          onChange={(e) => {
+            const file = e.target.files[0];
+            if (file) setSqliteFile(file);       // ✅ FIX
+          }}
+        />
       )}
 
-      {/* MONGO */}
+      {/* MONGO MODE */}
       {selectedSource === "mongo" && (
         <input
           placeholder="MongoDB connection URI"
           className="bg-gray-900 border border-gray-700 px-3 py-2 rounded w-96"
+          onChange={(e) => setMongoUri(e.target.value)}  // ✅ FIX
         />
       )}
     </div>

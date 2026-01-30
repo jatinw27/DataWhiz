@@ -9,9 +9,13 @@ export class DataSourceManager {
         this.sources[name] = source;
     }
 
-    get(name) {
-        return this.sources[name];
-    }
+   get(name) {
+  if (!this.sources[name]) {
+    throw new Error(`Datasource '${name}' not registered`);
+  }
+  return this.sources[name];
+}
+
 
     list() {
         return Object.keys(this.sources);

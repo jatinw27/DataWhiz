@@ -1,6 +1,8 @@
 import axios from "axios";
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
+export const connectMongo = (uri) =>
+  axios.post("/api/mongo/connect", { uri });
 
 export const fetchDatasets = () =>
   axios.get(`${API_BASE}/api/datasets`);

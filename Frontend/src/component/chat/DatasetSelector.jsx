@@ -5,14 +5,17 @@ export default function DatasetSelector({
   selectedDataset,
   setSelectedDataset,
   datasets,
-  addDataset,          // ✅ IMPORTANT
-  setMongoUri,         // ✅ for mongo
-  setSqliteFile,       // ✅ for sqlite
+  addDataset,          
+  setMongoUri,         
+  setSqliteFile,       
 }) {
 
-  useEffect(() => {
+ useEffect(() => {
   setSelectedDataset("");
+  setMongoUri?.("");
+  setSqliteFile?.(null);
 }, [selectedSource]);
+
 
   return (
     <div className="px-6 py-4 flex gap-4 items-center flex-wrap">

@@ -1,3 +1,4 @@
+import dns from 'node:dns/promises';
 import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
@@ -6,6 +7,7 @@ import helmet from "helmet";
 import path from "path";
 import uploadRoutes from "./routes/upload.route.js";
 import datasetRoutes from "./routes/dataset.route.js";
+import rateLimit from "express-rate-limit";
 
 import { dataSourceManager, datasetManager } from './core/managers.js';
 import { DatasetManager } from './datasets/datasets.manager.js';
@@ -19,9 +21,18 @@ import authRoutes from "./routes/auth.routes.js";
 
 
 
+await dns.setServers(['8.8.8.8', '8.8.4.4']);
+
+
+
 const app = express();
 const port = process.env.PORT || 3000;
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+});
 
+app.use(limiter);
 // middleware
 app.use(express.json());
 app.use(helmet());

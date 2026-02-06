@@ -3,6 +3,7 @@ import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import ProtectedRoute from "./component/ProtectedRoute";
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");

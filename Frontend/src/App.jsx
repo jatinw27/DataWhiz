@@ -20,9 +20,9 @@ export default function App() {
       <Route
         path="/chat"
         element={
-          <PrivateRoute>
+          <ProtectedRoute>
             <Chat />
-          </PrivateRoute>
+          </ProtectedRoute>
         }
       />
     </Routes>

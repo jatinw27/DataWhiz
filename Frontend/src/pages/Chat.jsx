@@ -1,11 +1,12 @@
 import { useState } from "react";
-import Header from "../component/Header.jsx";
+// import Header from "../component/Header.jsx";
 import ChatWindow from "../component/chat/ChatWindow.jsx";
 import DatasetSelector from "../component/chat/DatasetSelector.jsx";
 import InputBar from "../component/chat/InputBar.jsx";
 import ChatSessions from "../component/chat/ChatSessions.jsx";
 import { useChat } from "../hooks/useChat";
 import { useDatasets } from "../hooks/useDatasets";
+import Header from "../component/layout/Header.jsx";
 
 export default function Chat() {
   const chat = useChat();

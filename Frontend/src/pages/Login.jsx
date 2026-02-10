@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { loginUser } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [form, setForm] = useState({
     email: "",
     password: "",
@@ -16,10 +18,7 @@ export default function Login() {
 
     try {
       const res = await loginUser(form);
-
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-
+      login(res.data.token, res.data.user);
       navigate("/chat");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");

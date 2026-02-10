@@ -29,6 +29,8 @@ export default function Chat() {
       </div>
       {/* MAIN CHAT AREA */}
       <div className="flex flex-col flex-1">
+        
+        {/** HEADER */}
         <Header />
 
         {/* MODE TOGGLE */}

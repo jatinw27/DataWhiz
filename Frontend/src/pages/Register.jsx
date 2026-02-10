@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { registerUser } from "../services/api";
+import { useAuth } from "../context/AuthContext";
 
 export default function Register() {
   const navigate = useNavigate();
+  const {login} = useAuth()
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -17,10 +19,7 @@ export default function Register() {
 
     try {
       const res = await registerUser(form);
-
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(res.data.user));
-
+      login(res.data.token, res.data.user);
       navigate("/chat");
     } catch (err) {
       setError(err.response?.data?.message || "Registration failed");

@@ -25,9 +25,9 @@ export const AuthProvider = ({ children }) => {
       .finally(() => setLoading(false));
   }, []);
 
-  const login = (token) => {
+  const login = (token, user) => {
     localStorage.setItem("token", token);
-    window.location.href = "/chat";
+    setUser(user)
   };
 
   const logout = () => {

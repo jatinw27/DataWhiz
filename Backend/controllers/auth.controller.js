@@ -37,6 +37,13 @@ export const register = async (req, res) => {
 });
 
   } catch (err) {
+    console.error("Register error: ", err.message);
+
+    if(err.name === "ValidationError"){
+      return res.status(400).json({
+        message: err.message,
+      });
+    }
     res.status(500).json({ message: "Server error" });
   }
 };

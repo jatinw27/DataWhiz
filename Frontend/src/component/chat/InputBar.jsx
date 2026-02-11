@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { SendHorizonal } from "lucide-react";
 
 export default function InputBar({ onSend, loading }) {
   const [input, setInput] = useState("");
@@ -10,25 +11,33 @@ export default function InputBar({ onSend, loading }) {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 w-full bg-[#0d0d0d] border-t border-gray-800">
-      <div className="max-w-4xl mx-auto flex items-center gap-3 px-4 py-4">
-        <input
-          className="flex-1 bg-gray-900 rounded-xl px-4 py-3 text-white outline-none placeholder-gray-400"
-          placeholder="Ask DataWhiz..."
+    <div className="relative">
+      <div className="flex items-center bg-[#1a1a1a] border border-gray-700 rounded-2xl px-4 py-3 shadow-lg focus-within:border-green-500 transition">
+
+        <textarea
+          rows={1}
+          placeholder="Ask DataWhiz anything..."
+          className="flex-1 bg-transparent outline-none resize-none text-sm text-white placeholder-gray-400"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend();
+            }
+          }}
         />
+
         <button
           onClick={handleSend}
           disabled={loading}
-         className={`ml-3 px-4 rounded transition
-    ${loading
-      ? "bg-gray-600 cursor-not-allowed"
-      : "bg-green-600 hover:bg-green-700"}
-  `}
->
-          Send
+          className={`ml-3 p-2 rounded-xl transition ${
+            loading
+              ? "bg-gray-700 cursor-not-allowed"
+              : "bg-green-600 hover:bg-green-700"
+          }`}
+        >
+          <SendHorizonal size={18} />
         </button>
       </div>
     </div>

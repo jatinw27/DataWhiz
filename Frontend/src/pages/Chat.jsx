@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { Menu } from "lucide-react";
+
 import Header from "../component/layout/Header.jsx";
 import ChatWindow from "../component/chat/ChatWindow.jsx";
 import DatasetSelector from "../component/chat/DatasetSelector.jsx";
 import InputBar from "../component/chat/InputBar.jsx";
 import ChatSessions from "../component/chat/ChatSessions.jsx";
+
 import { useChat } from "../hooks/useChat";
 import { useDatasets } from "../hooks/useDatasets";
 
@@ -13,12 +16,17 @@ export default function Chat() {
 
   const [selectedSource, setSelectedSource] = useState("csv");
   const [chatMode, setChatMode] = useState("data");
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
     <div className="flex h-screen bg-[#0d0d0d] text-white overflow-hidden">
 
-      {/* LEFT SIDEBAR */}
-      <div className="hidden md:flex w-64 border-r border-gray-800">
+      {/* SIDEBAR */}
+      <div
+        className={`${
+          sidebarOpen ? "w-64" : "w-0"
+        } transition-all duration-300 overflow-hidden border-r border-gray-800`}
+      >
         <ChatSessions
           sessions={chat.sessions}
           activeSessionId={chat.activeSessionId}
@@ -29,12 +37,21 @@ export default function Chat() {
         />
       </div>
 
-      {/* MAIN CHAT AREA */}
+      {/* MAIN AREA */}
       <div className="flex flex-col flex-1">
 
-        <Header />
+        {/* HEADER WITH TOGGLE */}
+        <div className="flex items-center border-b border-gray-800">
+          <button
+            onClick={() => setSidebarOpen(prev => !prev)}
+            className="p-4 hover:bg-gray-800 transition"
+          >
+            <Menu size={20} />
+          </button>
+          <Header />
+        </div>
 
-        {/* MODE SWITCHER */}
+        {/* MODE SWITCH */}
         <div className="px-8 pt-6 flex gap-4">
           <button
             onClick={() => setChatMode("data")}
@@ -59,7 +76,7 @@ export default function Chat() {
           </button>
         </div>
 
-        {/* DATA SOURCE SELECTOR */}
+        {/* DATA SOURCE */}
         {chatMode === "data" && (
           <div className="px-8">
             <DatasetSelector
@@ -75,12 +92,12 @@ export default function Chat() {
           </div>
         )}
 
-        {/* CHAT AREA CONTAINER */}
+        {/* CHAT */}
         <div className="flex-1 overflow-y-auto px-8 pt-6 pb-32 max-w-4xl w-full mx-auto">
           <ChatWindow {...chat} />
         </div>
 
-        {/* INPUT BAR */}
+        {/* INPUT */}
         <div className="border-t border-gray-800 bg-[#0d0d0d] px-8 py-4">
           <div className="max-w-4xl mx-auto">
             <InputBar
@@ -96,7 +113,6 @@ export default function Chat() {
             />
           </div>
         </div>
-
       </div>
     </div>
   );

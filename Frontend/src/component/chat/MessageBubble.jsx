@@ -1,3 +1,5 @@
+import { motion } from "framer-motion";
+
 export default function MessageBubble({
   text,
   sender,
@@ -10,25 +12,34 @@ export default function MessageBubble({
   const isUser = sender === "user";
 
   return (
-    <div
-      className={`max-w-[70%] px-4 py-2 rounded-xl ${
-        isUser
-          ? "bg-blue-600 text-white ml-auto"
-          : "bg-gray-800 text-gray-100"
-      } ${isGrouped ? "mt-1" : "mt-4"}`}
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className={`max-w-[70%] px-5 py-3 rounded-2xl backdrop-blur-md shadow-md
+        ${
+          isUser
+            ? "ml-auto bg-gradient-to-br from-green-600 to-green-700 text-white"
+            : "bg-[#1a1a1a] border border-gray-800 text-gray-100"
+        }
+        ${isGrouped ? "mt-1" : "mt-4"}
+      `}
     >
-      <div className="text-sm leading-relaxed">{text}</div>
+      {/* TEXT */}
+      <div className="text-sm leading-relaxed whitespace-pre-wrap">
+        {text}
+      </div>
 
       {/* DATA TABLE */}
       {Array.isArray(data) && data.length > 0 && (
-        <div className="mt-3 overflow-x-auto border border-gray-700 rounded">
+        <div className="mt-4 overflow-x-auto rounded-lg border border-gray-700">
           <table className="text-sm w-full border-collapse">
-            <thead className="bg-gray-900">
+            <thead className="bg-black/40">
               <tr>
-                {Object.keys(data[0]).map(key => (
+                {Object.keys(data[0]).map((key) => (
                   <th
                     key={key}
-                    className="px-3 py-2 border-b border-gray-700 text-left"
+                    className="px-3 py-2 text-left border-b border-gray-700"
                   >
                     {key}
                   </th>
@@ -51,39 +62,35 @@ export default function MessageBubble({
             </tbody>
           </table>
 
-          {/* SQL QUERY VIEW */}
+          {/* QUERY VIEW */}
           {query && (
-            <details className="mt-2 text-xs text-gray-300">
-              <summary className="cursor-pointer text-green-400">
+            <details className="mt-3 text-xs text-gray-400 px-3 pb-3">
+              <summary className="cursor-pointer text-green-400 hover:underline">
                 View generated query
               </summary>
-              <pre className="mt-2 bg-black/70 p-3 rounded overflow-x-auto">
+              <pre className="mt-2 bg-black/70 p-3 rounded overflow-x-auto text-xs">
                 {query}
               </pre>
             </details>
           )}
         </div>
       )}
-{sender === "user" && (
-  <div className="text-[10px] text-right mt-1">
-    {status === "sending" && (
-      <span className="text-gray-300">Sending…</span>
-    )}
-    {status === "sent" && (
-      <span className="text-gray-400">Sent</span>
-    )}
-    {status === "error" && (
-      <span className="text-red-400">Failed</span>
-    )}
-  </div>
-)}
 
-      {sender !== "user" && time && (
-        <div className="text-[10px] text-gray-400 mt-1 text-right">
+      {/* STATUS (only for user messages) */}
+      {sender === "user" && (
+        <div className="text-[10px] text-right mt-2 text-gray-300">
+          {status === "sending" && "Sending…"}
+          {status === "sent" && "Sent"}
+          {status === "error" && "Failed"}
+        </div>
+      )}
+
+      {/* TIME */}
+      {time && (
+        <div className="text-[10px] text-right mt-1 text-gray-400">
           {time}
         </div>
       )}
-    </div>
-    
+    </motion.div>
   );
 }

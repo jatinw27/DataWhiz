@@ -175,33 +175,68 @@ const deleteSession = (id) => {
         });
       }
 
-      const botMessage = {
-        text: res.data.answer || res.data.botMsg,
-        sender: "bot",
-        time: getTime(),
-        data: res.data.data || [],
-        query: res.data.generatedQuery || null,
-      };
+     const fullText = res.data.answer || res.data.botMsg;
 
-      // Update messages with bot reply
-      setSessions((prev) => {
-        const session = prev[activeSessionId];
-        const updatedMessages = [...session.messages];
+// Step 1: Add empty bot message first
+setSessions((prev) => {
+  const session = prev[activeSessionId];
+  const updatedMessages = [...session.messages];
 
-        // Mark user message as sent
-        updatedMessages[updatedMessages.length - 1] = {
-          ...updatedMessages[updatedMessages.length - 1],
-          status: "sent",
-        };
+  // mark user as sent
+  updatedMessages[updatedMessages.length - 1] = {
+    ...updatedMessages[updatedMessages.length - 1],
+    status: "sent",
+  };
 
-        return {
-          ...prev,
-          [activeSessionId]: {
-            ...session,
-            messages: [...updatedMessages, botMessage],
-          },
-        };
-      });
+  return {
+    ...prev,
+    [activeSessionId]: {
+      ...session,
+      messages: [
+        ...updatedMessages,
+        {
+          text: "",
+          sender: "bot",
+          time: getTime(),
+          data: res.data.data || [],
+          query: res.data.generatedQuery || null,
+        },
+      ],
+    },
+  };
+});
+
+// Step 2: Streaming effect
+let index = 0;
+
+const interval = setInterval(() => {
+  index++;
+
+  setSessions((prev) => {
+    const session = prev[activeSessionId];
+    const updatedMessages = [...session.messages];
+
+    const lastIndex = updatedMessages.length - 1;
+
+    updatedMessages[lastIndex] = {
+      ...updatedMessages[lastIndex],
+      text: fullText.slice(0, index),
+    };
+
+    return {
+      ...prev,
+      [activeSessionId]: {
+        ...session,
+        messages: updatedMessages,
+      },
+    };
+  });
+
+  if (index >= fullText.length) {
+    clearInterval(interval);
+  }
+}, 15); // speed (lower = faster)
+
     } catch (err) {
       // Mark last user message as error
       setSessions((prev) => {

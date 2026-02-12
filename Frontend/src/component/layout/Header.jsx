@@ -1,74 +1,121 @@
 import { Link, useNavigate } from "react-router-dom";
-import { FaUserCircle } from "react-icons/fa";
-import { useState } from "react";
+import { FaUserCircle, FaMoon, FaSun } from "react-icons/fa";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 
 export default function Header() {
   const { user, isAuthenticated, logout } = useAuth();
   const [open, setOpen] = useState(false);
+  const [dark, setDark] = useState(() => {
+    return localStorage.getItem("theme") !== "light";
+  });
   const navigate = useNavigate();
+const dropdownRef = useRef(null);
+
+useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (
+      dropdownRef.current &&
+      !dropdownRef.current.contains(event.target)
+    ) {
+      setOpen(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
+
+
+  useEffect(() => {
+    if (dark) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  }, [dark]);
 
   return (
-    <header className="border-b border-gray-800 bg-[#0d0d0d]">
+    <header className="border-b border-gray-200 dark:border-gray-800 
+    bg-white dark:bg-[#0d0d0d] 
+    text-black dark:text-white transition-colors">
+
       <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
 
-        {/* LOGO */}
-        <Link to="/" className="font-bold text-lg text-white">
+        <Link to="/" className="font-bold text-lg">
           DataWhiz
         </Link>
 
-        {/* RIGHT SIDE */}
-        {!isAuthenticated ? (
-          <div className="flex gap-4 text-sm">
-            <Link
-              to="/login"
-              className="text-gray-300 hover:text-white"
-            >
-              Login
-            </Link>
+        <div className="flex items-center gap-4">
 
-            <Link
-              to="/register"
-              className="bg-green-600 hover:bg-green-700 px-4 py-1.5 rounded"
-            >
-              Register
-            </Link>
-          </div>
-        ) : (
-          <div className="relative">
-            <button
-              onClick={() => setOpen(prev => !prev)}
-              className="flex items-center gap-2 text-gray-300 hover:text-white"
-            >
-              <FaUserCircle size={22} />
-              <span className="text-sm">{user?.name}</span>
-            </button>
+          {/* 🌗 Theme Toggle */}
+          <button
+            onClick={() => setDark(prev => !prev)}
+            className="hover:scale-110 transition"
+          >
+            {dark ? <FaSun size={18} /> : <FaMoon size={18} />}
+          </button>
 
-            {open && (
-              <div className="absolute right-0 mt-2 w-40 bg-gray-900 border border-gray-800 rounded shadow-lg">
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    navigate("/chat");
-                  }}
-                  className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-800"
-                >
-                  Chat
-                </button>
+          {!isAuthenticated ? (
+            <div className="flex gap-4 text-sm">
+              <Link to="/login" className="hover:underline">
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="bg-green-600 hover:bg-green-700 px-4 py-1.5 rounded text-white"
+              >
+                Register
+              </Link>
+            </div>
+          ) : (
+            <div className="relative" ref={dropdownRef}>
+              <button
+                onClick={() => setOpen(prev => !prev)}
+                className="flex items-center gap-2"
+              >
+                <FaUserCircle size={22} />
+                <span className="text-sm">{user?.name}</span>
+              </button>
 
-                <button
-                  onClick={() => {
-                    setOpen(false);
-                    logout();
-                  }}
-                  className="block w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-gray-800"
-                >
-                  Logout
-                </button>
-              </div>
-            )}
-          </div>
-        )}
+              {open && (
+                <div className="absolute right-0 mt-2 w-40 
+                bg-white dark:bg-gray-900 
+                border border-gray-200 dark:border-gray-800 
+                rounded shadow-lg">
+
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      navigate("/chat");
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm 
+                    hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    Chat
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setOpen(false);
+                      logout();
+                    }}
+                    className="block w-full text-left px-4 py-2 text-sm text-red-500 
+                    hover:bg-gray-100 dark:hover:bg-gray-800"
+                  >
+                    Logout
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+        </div>
       </div>
     </header>
   );

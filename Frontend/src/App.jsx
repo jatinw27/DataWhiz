@@ -4,6 +4,7 @@ import Chat from "./pages/Chat";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ProtectedRoute from "./component/ProtectedRoute";
+import Dashboard from "./pages/Dashboard.jsx";
 
 const PrivateRoute = ({ children }) => {
   const token = localStorage.getItem("token");
@@ -25,6 +26,11 @@ export default function App() {
           </ProtectedRoute>
         }
       />
+      <Route path="/dashboard" element={
+        <ProtectedRoute>
+          <Dashboard/>
+        </ProtectedRoute>
+      }/>
     </Routes>
   );
 }

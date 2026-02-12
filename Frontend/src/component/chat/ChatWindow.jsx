@@ -1,52 +1,44 @@
-import Loader from "../Loader";
-import MessageBubble from "./MessageBubble";
+import { useState } from "react";
+import { Send } from "lucide-react";
 
-export default function ChatWindow({ messages, loading, bottomRef }) {
+export default function InputBar({ onSend, loading }) {
+  const [input, setInput] = useState("");
+
+  const handleSend = () => {
+    if (!input.trim() || loading) return;
+    onSend(input);
+    setInput("");
+  };
+
   return (
-    <div className="flex-1 overflow-y-auto scroll-smooth">
-      {/* Background gradient */}
-      <div className="min-h-full bg-gradient-to-b from-[#0d0d0d] via-[#111] to-[#0d0d0d]">
+    <div className="sticky bottom-0 w-full bg-[#0d0d0d]/80 backdrop-blur border-t border-gray-800">
+      <div className="max-w-3xl mx-auto px-6 py-4">
         
-        {/* Centered container */}
-        <div className="max-w-3xl mx-auto px-6 py-8">
+        <div className="flex items-center bg-gray-900 border border-gray-700 rounded-2xl px-4 py-3 shadow-lg focus-within:border-green-500 transition-all">
           
-          {/* EMPTY STATE */}
-          {messages.length === 0 && (
-            <div className="flex flex-col items-center justify-center mt-32 text-center text-gray-400">
-              <div className="text-4xl mb-4">🤖</div>
-              <h2 className="text-xl font-semibold text-white mb-2">
-                Welcome to DataWhiz
-              </h2>
-              <p className="text-sm max-w-md">
-                Ask questions about your data or chat with AI.
-                Start by typing below.
-              </p>
-            </div>
-          )}
+          <input
+            type="text"
+            placeholder="Ask DataWhiz anything..."
+            className="flex-1 bg-transparent outline-none text-sm text-white placeholder-gray-500"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            disabled={loading}
+          />
 
-          {/* MESSAGES */}
-          {messages.map((msg, i) => {
-            const prev = messages[i - 1];
-            const isGrouped = prev && prev.sender === msg.sender;
-
-            return (
-              <MessageBubble
-                key={i}
-                {...msg}
-                isGrouped={isGrouped}
-              />
-            );
-          })}
-
-          {/* LOADER */}
-          {loading && (
-            <div className="mt-4">
-              <Loader text="DataWhiz is thinking..." />
-            </div>
-          )}
-
-          <div ref={bottomRef} />
+          <button
+            onClick={handleSend}
+            disabled={loading}
+            className={`ml-3 p-2 rounded-lg transition-all ${
+              loading
+                ? "bg-gray-700 cursor-not-allowed"
+                : "bg-green-600 hover:bg-green-700"
+            }`}
+          >
+            <Send size={16} />
+          </button>
         </div>
+
       </div>
     </div>
   );

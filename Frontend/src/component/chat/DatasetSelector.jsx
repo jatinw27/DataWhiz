@@ -52,7 +52,10 @@ export default function DatasetSelector({
             accept=".csv"
             onChange={(e) => {
               const file = e.target.files[0];
-              if (file) addDataset(file.name);   // ✅ FIX
+              if (!file) return;   
+                const name = file.name.replace(".csv", "");
+                addDataset(name);
+                setSelectedDataset(name);
             }}
           />
         </>

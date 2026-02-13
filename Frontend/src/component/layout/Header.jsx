@@ -61,66 +61,65 @@ useEffect(() => {
             {dark ? <FaSun size={18} /> : <FaMoon size={18} />}
           </button>
 
-          {!isAuthenticated ? (
-            <div className="flex gap-4 text-sm">
-              <Link to="/login" className="hover:underline">
-                Login
-              </Link>
-              <Link
-                to="/register"
-                className="bg-green-600 hover:bg-green-700 px-4 py-1.5 rounded text-white"
-              >
-                Register
-              </Link>
-            </div>
-          ) : (
-            <div className="relative" ref={dropdownRef}>
-  <button
-    onClick={() => setOpen(prev => !prev)}
-    className="flex items-center gap-2"
-  >
-    <FaUserCircle size={22} />
-    <span className="text-sm">{user?.name}</span>
-  </button>
-
-  {/* Animated Dropdown */}
-  <div
-    className={`absolute right-0 mt-2 w-44 
-    bg-white dark:bg-gray-900 
-    border border-gray-200 dark:border-gray-800 
-    rounded-lg shadow-xl 
-    transition-all duration-200 origin-top-right
-    ${
-      open
-        ? "opacity-100 scale-100 translate-y-0"
-        : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
-    }`}
-  >
+ {isAuthenticated && (
+  <div className="relative" ref={dropdownRef}>
     <button
-      onClick={() => {
-        setOpen(false);
-        navigate("/chat");
-      }}
-      className="block w-full text-left px-4 py-2 text-sm 
-      hover:bg-gray-100 dark:hover:bg-gray-800"
+      onClick={() => setOpen(prev => !prev)}
+      className="flex items-center gap-2"
     >
-      Chat
+      <FaUserCircle size={22} />
+      <span className="text-sm">{user?.name}</span>
     </button>
 
-    <button
-      onClick={() => {
-        setOpen(false);
-        logout();
-      }}
-      className="block w-full text-left px-4 py-2 text-sm text-red-500 
-      hover:bg-gray-100 dark:hover:bg-gray-800"
+    {/* Animated Dropdown */}
+    <div
+      className={`absolute right-0 mt-2 w-44 
+      bg-white dark:bg-gray-900 
+      border border-gray-200 dark:border-gray-800 
+      rounded-lg shadow-xl 
+      transition-all duration-200 origin-top-right
+      ${
+        open
+          ? "opacity-100 scale-100 translate-y-0"
+          : "opacity-0 scale-95 -translate-y-2 pointer-events-none"
+      }`}
     >
-      Logout
-    </button>
+      <button
+        onClick={() => {
+          setOpen(false);
+          navigate("/dashboard");
+        }}
+        className="block w-full text-left px-4 py-2 text-sm 
+        hover:bg-gray-100 dark:hover:bg-gray-800"
+      >
+        Dashboard
+      </button>
+
+      <button
+        onClick={() => {
+          setOpen(false);
+          navigate("/chat");
+        }}
+        className="block w-full text-left px-4 py-2 text-sm 
+        hover:bg-gray-100 dark:hover:bg-gray-800"
+      >
+        Chat
+      </button>
+
+      <button
+        onClick={() => {
+          setOpen(false);
+          logout();
+        }}
+        className="block w-full text-left px-4 py-2 text-sm text-red-500 
+        hover:bg-gray-100 dark:hover:bg-gray-800"
+      >
+        Logout
+      </button>
+    </div>
   </div>
-</div>
+)}
 
-          )}
 
         </div>
       </div>

@@ -5,7 +5,8 @@ import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 
 export default function Header() {
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, logout } = useAuth();
+  const isAuthenticated = !!user;
   const { dark, toggleTheme } = useTheme();
 
   const [open, setOpen] = useState(false);

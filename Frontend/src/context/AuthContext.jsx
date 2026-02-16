@@ -1,51 +1,51 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { getMe } from "../services/api";
+import axios from "axios";
 
-const AuthContext = createContext(null);
+const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load user from token on refresh
+  const token = localStorage.getItem("token");
+
+  // Attach token to axios globally
   useEffect(() => {
-    const token = localStorage.getItem("token");
+    axios.defaults.headers.common["Authorization"] =
+      token ? `Bearer ${token}` : "";
+  }, [token]);
 
-    if (!token) {
-      setLoading(false);
-      return;
-    }
+  // Fetch logged-in user
+  useEffect(() => {
+    const fetchMe = async () => {
+      try {
+        if (!token) return setLoading(false);
 
-    getMe()
-      .then((res) => setUser(res.data))
-      .catch(() => {
-        localStorage.removeItem("token");
-        setUser(null);
-      })
-      .finally(() => setLoading(false));
+        const res = await axios.get("/api/auth/me");
+        setUser(res.data);
+      } catch {
+        logout();
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMe();
   }, []);
 
   const login = (token, user) => {
     localStorage.setItem("token", token);
-    setUser(user)
+    setUser(user);
   };
 
   const logout = () => {
-    localStorage.removeItem("token");
+    localStorage.clear();
     setUser(null);
     window.location.href = "/login";
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        isAuthenticated: !!user,
-        login,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

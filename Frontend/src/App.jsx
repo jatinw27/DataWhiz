@@ -1,15 +1,10 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Chat from "./pages/Chat";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./component/ProtectedRoute";
-import Dashboard from "./pages/Dashboard.jsx";
-
-const PrivateRoute = ({ children }) => {
-  const token = localStorage.getItem("token");
-  return token ? children : <Navigate to="/login" />;
-};
 
 export default function App() {
   return (
@@ -26,11 +21,15 @@ export default function App() {
           </ProtectedRoute>
         }
       />
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <Dashboard/>
-        </ProtectedRoute>
-      }/>
+
+      <Route
+        path="/dashboard"
+        element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }

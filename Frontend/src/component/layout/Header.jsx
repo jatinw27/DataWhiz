@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { FaUserCircle, FaMoon, FaSun } from "react-icons/fa";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 
@@ -12,6 +12,20 @@ export default function Header() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
+
+  useEffect(() => {
+  const handleClickOutside = (e) => {
+    if (!dropdownRef.current?.contains(e.target)) {
+      setOpen(false);
+    }
+  };
+
+  document.addEventListener("mousedown", handleClickOutside);
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutside);
+  };
+}, []);
+
 
   return (
     <header className="border-b border-gray-200 dark:border-gray-800 

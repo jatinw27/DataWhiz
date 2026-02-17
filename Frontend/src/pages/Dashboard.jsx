@@ -21,10 +21,11 @@ export default function Dashboard() {
 
   const totalChats = Object.keys(sessions || {}).length;
 
-  const totalMessages = Object.values(sessions || {}).reduce(
-    (acc, session) => acc + session.messages.length,
-    0
-  );
+const totalMessages = Object.values(sessions || {}).reduce(
+  (acc, session) => acc + (session.messages?.length || 0),
+  0
+);
+
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#0d0d0d] text-black dark:text-white transition-colors">

@@ -16,11 +16,11 @@ export default function MessageBubble({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className={`max-w-[70%] px-5 py-3 rounded-2xl backdrop-blur-md shadow-md
+      className={`max-w-[70%] px-5 py-3 rounded-2xl shadow-md
         ${
           isUser
             ? "ml-auto bg-gradient-to-br from-green-600 to-green-700 text-white"
-            : "bg-[#1a1a1a] border border-gray-800 text-gray-100"
+            : "bg-gray-100 text-black border border-gray-200 dark:bg-[#1a1a1a] dark:text-gray-100 dark:border-gray-800"
         }
         ${isGrouped ? "mt-1" : "mt-4"}
       `}

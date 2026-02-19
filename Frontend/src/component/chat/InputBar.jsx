@@ -12,12 +12,12 @@ export default function InputBar({ onSend, loading }) {
 
   return (
     <div className="relative">
-      <div className="flex items-center bg-[#1a1a1a] border border-gray-700 rounded-2xl px-4 py-3 shadow-lg focus-within:border-green-500 transition">
+      <div className="flex items-center bg-gray-100 dark:bg-[#1a1a1a] border border-x-gray-300 dark:border-gray-700 rounded-2xl px-4 py-3 shadow-lg focus-within:border-green-500 transition">
 
         <textarea
           rows={1}
           placeholder="Ask DataWhiz anything..."
-          className="flex-1 bg-transparent outline-none resize-none text-sm text-white placeholder-gray-400"
+          className="flex-1 bg-transparent outline-none resize-none text-sm text-black dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

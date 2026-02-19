@@ -4,8 +4,20 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import "./index.css";
-import { ThemeProvider } from "./context/ThemeContext";
+import { ThemeProvider, useTheme } from "./context/ThemeContext";
 
+
+
+function Root(params) {
+  const {dark} = useTheme();
+
+  return (
+    <div className={dark? "dark" : ""}>
+      <App/>
+    </div>
+  )
+  
+}
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <BrowserRouter>

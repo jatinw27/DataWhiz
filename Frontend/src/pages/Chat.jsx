@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Menu } from "lucide-react";
 
 import Header from "../component/layout/Header.jsx";
-import ChatWindow from "../component/chat/ChatWindow.jsx";
+import ChatWindow from "../component/chat/ChatWindow.jsx"
 import DatasetSelector from "../component/chat/DatasetSelector.jsx";
 import InputBar from "../component/chat/InputBar.jsx";
 import ChatSessions from "../component/chat/ChatSessions.jsx";
@@ -19,14 +19,17 @@ export default function Chat() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div className="flex h-screen bg-[#0d0d0d] text-white overflow-hidden">
+   <div className="flex h-screen bg-gray-100 dark:bg-[#0f0f0f] text-gray-900 dark:text-white overflow-hidden">
 
       {/* SIDEBAR */}
       <div
-        className={`${
-          sidebarOpen ? "w-64" : "w-0"
-        } transition-all duration-300 overflow-hidden border-r border-gray-800`}
-      >
+  className={`${
+    sidebarOpen ? "w-64" : "w-0"
+  } bg-white dark:bg-[#0d0d0d]
+     border-r border-gray-200 dark:border-gray-800 shadow-sm
+  transition-all duration-300 overflow-hidden `}
+>
+
         <ChatSessions
           sessions={chat.sessions}
           activeSessionId={chat.activeSessionId}
@@ -41,15 +44,19 @@ export default function Chat() {
       <div className="flex flex-col flex-1">
 
         {/* HEADER WITH TOGGLE */}
-        <div className="flex items-center border-b border-gray-800">
-          <button
-            onClick={() => setSidebarOpen(prev => !prev)}
-            className="p-4 hover:bg-gray-800 transition"
-          >
-            <Menu size={20} />
-          </button>
-          <Header />
-        </div>
+        <div className="sticky top-0 z-20 bg-white dark:bg-[#0d0d0d] border-b border-gray-200 dark:border-gray-800">
+  <Header
+    leftSlot={
+      <button
+        onClick={() => setSidebarOpen(prev => !prev)}
+        className="p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+      >
+        <Menu size={20} />
+      </button>
+    }
+  />
+</div>
+
 
         {/* MODE SWITCH */}
         <div className="px-8 pt-6 flex gap-4">
@@ -57,8 +64,8 @@ export default function Chat() {
             onClick={() => setChatMode("data")}
             className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
               chatMode === "data"
-                ? "bg-green-600"
-                : "bg-gray-800 hover:bg-gray-700"
+                ? "bg-green-600 text-white"
+                : "bg-gray-200 text-black hover:bg-gray-300 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 "
             }`}
           >
             📊 Data Chat
@@ -68,8 +75,8 @@ export default function Chat() {
             onClick={() => setChatMode("ai")}
             className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
               chatMode === "ai"
-                ? "bg-green-600"
-                : "bg-gray-800 hover:bg-gray-700"
+                ? "bg-green-600 text-white"
+                : "bg-gray-200 text-black hover:bg-gray-300 dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700"
             }`}
           >
             🤖 AI Chat
@@ -94,11 +101,20 @@ export default function Chat() {
 
         {/* CHAT */}
         <div className="flex-1 overflow-y-auto px-8 pt-6 pb-32 max-w-4xl w-full mx-auto">
-          <ChatWindow {...chat} />
+          <ChatWindow 
+  messages={chat.messages}
+  loading={chat.loading}
+  bottomRef={chat.bottomRef}
+/>
+
+       
+
         </div>
 
         {/* INPUT */}
-        <div className="border-t border-gray-800 bg-[#0d0d0d] px-8 py-4">
+       
+ <div className="border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-[#0d0d0d] px-8 py-4">
+
           <div className="max-w-4xl mx-auto">
             <InputBar
               loading={chat.loading}

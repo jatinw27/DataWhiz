@@ -81,6 +81,13 @@ const deleteSession = (id) => {
   });
 };
 
+
+useEffect(() => {
+  if (!activeSessionId && Object.keys(sessions).length === 0) {
+    createNewSession();
+  }
+}, [activeSessionId, sessions]);
+
   /* =========================================================
      LOAD SESSIONS FROM LOCAL STORAGE (ON MOUNT)
      ========================================================= */
@@ -127,8 +134,12 @@ const deleteSession = (id) => {
      SEND MESSAGE (AI OR DATA MODE)
      ========================================================= */
 
+
   const sendMessage = async ({ text, mode, source, dataset }) => {
-    if (!text?.trim() || !activeSessionId) return;
+    console.log("sendMessage called with:", { text, mode, source, dataset });
+    
+    if (!text?.trim() ) return;
+    
 
     const userMessage = {
       text,

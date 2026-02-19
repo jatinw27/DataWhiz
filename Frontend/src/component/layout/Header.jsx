@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 
-export default function Header() {
+export default function Header({leftslot}) {
   const { user, logout } = useAuth();
   const isAuthenticated = !!user;
   const { dark, toggleTheme } = useTheme();
@@ -33,13 +33,13 @@ export default function Header() {
     text-black dark:text-white transition-colors">
 
       <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+        <div className="flex items-center gap-4">
 
         {/* LOGO */}
         <Link to="/" className="font-bold text-lg">
           DataWhiz
         </Link>
 
-        <div className="flex items-center gap-4">
 
           {/* 🌗 THEME TOGGLE */}
           <button

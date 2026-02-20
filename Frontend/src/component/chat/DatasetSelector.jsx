@@ -1,86 +1,89 @@
 import { useEffect } from "react";
+
 export default function DatasetSelector({
   selectedSource,
   setSelectedSource,
   selectedDataset,
   setSelectedDataset,
   datasets,
-  addDataset,          
-  setMongoUri,         
-  setSqliteFile,       
+  addDataset,
+  setMongoUri,
+  setSqliteFile,
 }) {
-
- useEffect(() => {
-  setSelectedDataset("");
-  setMongoUri?.("");
-  setSqliteFile?.(null);
-}, [selectedSource]);
-
+  useEffect(() => {
+    setSelectedDataset("");
+    setMongoUri?.("");
+    setSqliteFile?.(null);
+  }, [selectedSource]);
 
   return (
-    <div className="px-6 py-4 flex gap-4 items-center flex-wrap">
+  <div className="mt-4 mb-6 max-w-4xl mx-auto">
+    <div className="bg-white dark:bg-[#141414]
+      border border-gray-200 dark:border-gray-800
+      rounded-2xl p-4 shadow-sm space-y-4">
 
-      {/* SOURCE SELECT */}
-      <select
-        value={selectedSource}
-        onChange={e => setSelectedSource(e.target.value)}
-        className="bg-gray-900 border border-gray-700 px-3 py-2 rounded"
-      >
-        <option value="csv">CSV</option>
-        <option value="sqlite">SQLite</option>
-        <option value="mongo">MongoDB</option>
-      </select>
+      {/* ROW 1 */}
+      <div className="flex flex-wrap gap-3 items-center">
+        <select
+          value={selectedSource}
+          onChange={e => setSelectedSource(e.target.value)}
+          className="px-3 py-2 rounded-lg border
+          bg-gray-50 dark:bg-[#1a1a1a]
+          border-gray-300 dark:border-gray-700"
+        >
+          <option value="csv">CSV</option>
+          <option value="sqlite">SQLite</option>
+          <option value="mongo">MongoDB</option>
+        </select>
 
-      {/* CSV MODE */}
-      {selectedSource === "csv" && (
-        <>
+        {selectedSource === "csv" && (
           <select
             value={selectedDataset}
             onChange={e => setSelectedDataset(e.target.value)}
-            className="bg-gray-900 border border-gray-700 px-3 py-2 rounded"
+            className="px-3 py-2 rounded-lg border
+            bg-gray-50 dark:bg-[#1a1a1a]
+            border-gray-300 dark:border-gray-700"
           >
-            {datasets.length === 0 && (
-              <option>No datasets</option>
-            )}
+            {datasets.length === 0 && <option>No datasets</option>}
             {datasets.map(d => (
-              <option key={d} value={d}>{d}</option>
+              <option key={d}>{d}</option>
             ))}
           </select>
+        )}
+      </div>
 
+      {/* ROW 2 */}
+      {selectedSource === "csv" && (
+        <div className="flex items-center gap-3">
           <input
             type="file"
             accept=".csv"
+            className="text-sm"
             onChange={(e) => {
               const file = e.target.files[0];
-              if (!file) return;   
-                const name = file.name.replace(".csv", "");
-                addDataset(name);
-                setSelectedDataset(name);
+              if (!file) return;
+              const name = file.name.replace(".csv", "");
+              addDataset(name);
+              setSelectedDataset(name);
             }}
           />
-        </>
+        </div>
       )}
 
-      {/* SQLITE MODE */}
       {selectedSource === "sqlite" && (
-        <input
-          type="file"
-          accept=".db,.sqlite"
-          onChange={(e) => {
-            const file = e.target.files[0];
-            if (file) setSqliteFile(file);       // ✅ FIX
-          }}
-        />
+        <input type="file" accept=".db,.sqlite" />
       )}
 
-      {/* MONGO MODE */}
       {selectedSource === "mongo" && (
         <input
           placeholder="MongoDB connection URI"
-          className="bg-gray-900 border border-gray-700 px-3 py-2 rounded w-96"
-          onChange={(e) => setMongoUri(e.target.value)}  // ✅ FIX
+          className="w-full px-3 py-2 rounded-lg border
+          bg-gray-50 dark:bg-[#1a1a1a]
+          border-gray-300 dark:border-gray-700"
+          onChange={e => setMongoUri(e.target.value)}
         />
       )}
     </div>
-  );
+  </div>
+);
 }

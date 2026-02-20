@@ -4,97 +4,89 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 
-export default function Header({leftslot}) {
+export default function Header({ leftSlot }) {
   const { user, logout } = useAuth();
-  const isAuthenticated = !!user;
   const { dark, toggleTheme } = useTheme();
-
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-  const handleClickOutside = (e) => {
-    if (!dropdownRef.current?.contains(e.target)) {
-      setOpen(false);
-    }
-  };
-
-  document.addEventListener("mousedown", handleClickOutside);
-  return () => {
-    document.removeEventListener("mousedown", handleClickOutside);
-  };
-}, []);
-
+    const handleClickOutside = (e) => {
+      if (!dropdownRef.current?.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
-    <header className="border-b border-gray-200 dark:border-gray-800 
-    bg-white dark:bg-[#0d0d0d] 
-    text-black dark:text-white transition-colors">
-
-      <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+    <header className="bg-white dark:bg-[#0d0d0d] border-b border-gray-200 dark:border-gray-800">
+      <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+        
+        {/* LEFT */}
         <div className="flex items-center gap-4">
+          {leftSlot}
+          <Link to="/" className="font-bold text-lg tracking-tight">
+            DataWhiz
+          </Link>
+        </div>
 
-        {/* LOGO */}
-        <Link to="/" className="font-bold text-lg">
-          DataWhiz
-        </Link>
-
-
-          {/* 🌗 THEME TOGGLE */}
+        {/* RIGHT */}
+        <div className="flex items-center gap-2 bg-gray-100 dark:bg-[#161616] border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-1.5">
+          
+          {/* THEME */}
           <button
             onClick={toggleTheme}
-            className="hover:scale-110 transition"
+            className="p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition"
           >
-            {dark ? <FaSun size={18} /> : <FaMoon size={18} />}
+            {dark ? <FaSun size={16} /> : <FaMoon size={16} />}
           </button>
 
-          {/* 👤 USER MENU */}
-          {isAuthenticated && (
+          {/* USER */}
+          {user && (
             <div className="relative" ref={dropdownRef}>
               <button
-                onClick={() => setOpen(prev => !prev)}
-                className="flex items-center gap-2"
+                onClick={() => setOpen(p => !p)}
+                className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition"
               >
-                <FaUserCircle size={22} />
-                <span className="text-sm">{user?.name}</span>
+                <FaUserCircle size={18} />
+                <span className="text-sm font-medium">{user.name}</span>
               </button>
 
               <div
-                className={`absolute right-0 mt-2 w-44 
-                bg-white dark:bg-gray-900 
-                border border-gray-200 dark:border-gray-800 
-                rounded-lg shadow-xl transition-all
-                ${
-                  open
-                    ? "opacity-100 scale-100"
-                    : "opacity-0 scale-95 pointer-events-none"
-                }`}
+                className={`absolute right-0 mt-2 w-48 rounded-xl bg-white dark:bg-[#141414]
+                border border-gray-200 dark:border-gray-800 shadow-2xl overflow-hidden
+                transition-all origin-top-right ${open ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"}`}
               >
                 <button
-                  onClick={() => navigate("/dashboard")}
-                  className="block w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  Dashboard
-                </button>
+    onClick={() => navigate("/dashboard")}
+    className="w-full px-4 py-2.5 text-left text-sm
+    hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+  >
+    Dashboard
+  </button>
 
-                <button
-                  onClick={() => navigate("/chat")}
-                  className="block w-full px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  Chat
-                </button>
+  <button
+    onClick={() => navigate("/chat")}
+    className="w-full px-4 py-2.5 text-left text-sm
+    hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+  >
+    Chat
+  </button>
 
-                <button
-                  onClick={logout}
-                  className="block w-full px-4 py-2 text-sm text-red-500 hover:bg-gray-100 dark:hover:bg-gray-800"
-                >
-                  Logout
-                </button>
+  <div className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
+
+  <button
+    onClick={logout}
+    className="w-full px-4 py-2.5 text-left text-sm
+    text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition"
+  >
+    Logout
+  </button>
+
               </div>
             </div>
           )}
-
         </div>
       </div>
     </header>

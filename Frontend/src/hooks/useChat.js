@@ -137,9 +137,15 @@ useEffect(() => {
 
   const sendMessage = async ({ text, mode, source, dataset }) => {
     console.log("sendMessage called with:", { text, mode, source, dataset });
-    
+    console.log("DATA MODE PAYLOAD", {
+  mode,
+  source,
+  dataset,
+});
     if (!text?.trim() ) return;
     
+  const sessionId = activeSessionId;
+  if (!sessionId) return;
 
     const userMessage = {
       text,
@@ -172,12 +178,37 @@ useEffect(() => {
 
       // DATA CHAT (CSV / DB)
       if (mode === "data") {
-        res = await askNLQ({
-          question: text,
-          source,
-          dataset,
-        });
-      }
+  // HARD validation
+  if (!source || !dataset) {
+    setSessions((prev) => {
+      const session = prev[activeSessionId];
+
+      return {
+        ...prev,
+        [activeSessionId]: {
+          ...session,
+          messages: [
+            ...session.messages,
+            {
+              text: "Please select a valid data source and dataset before asking a question.",
+              sender: "bot",
+              time: getTime(),
+            },
+          ],
+        },
+      };
+    });
+
+    setLoading(false);
+    return;
+  }
+
+  res = await askNLQ({
+    question: text,
+    source,
+    dataset,
+  });
+}
       // AI CHAT
       else {
         res = await sendChatMessage({

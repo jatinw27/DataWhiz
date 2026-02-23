@@ -59,13 +59,29 @@ export default function DatasetSelector({
             type="file"
             accept=".csv"
             className="text-sm"
-            onChange={(e) => {
-              const file = e.target.files[0];
-              if (!file) return;
-              const name = file.name.replace(".csv", "");
-              addDataset(name);
-              setSelectedDataset(name);
-            }}
+           onChange={async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  try {
+    const res = await fetch("/api/upload-csv", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    // dataset name comes from backend (single source of truth)
+    addDataset(data.dataset);
+    setSelectedDataset(data.dataset);
+
+  } catch (err) {
+    console.error("CSV upload failed", err);
+  }
+}}
           />
         </div>
       )}

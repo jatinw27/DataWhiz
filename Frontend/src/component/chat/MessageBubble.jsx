@@ -68,8 +68,8 @@ export default function MessageBubble({
               <summary className="cursor-pointer text-green-400 hover:underline">
                 View generated query
               </summary>
-              <pre className="mt-2 bg-black/70 p-3 rounded overflow-x-auto text-xs">
-                {query}
+             <pre className="mt-2 bg-black/70 p-3 rounded overflow-x-auto text-xs">
+                {JSON.stringify(query, null, 2)}
               </pre>
             </details>
           )}

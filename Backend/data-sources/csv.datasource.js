@@ -68,7 +68,7 @@ console.log("CSV TABLE NAME:", this.tableName);
     }
 
     // AGGREGATION
-  if (aggregation && aggregation.toUpperCase() === "COUNT") {
+ if (aggregation && aggregation.toUpperCase().includes("COUNT")) {
   return [{ count: result.length }];
 }
 

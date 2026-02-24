@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { uploadCSV } from "../../services/api.js";
 
 export default function DatasetSelector({
   selectedSource,
@@ -67,12 +68,8 @@ export default function DatasetSelector({
   formData.append("file", file);
 
   try {
-    const res = await fetch("/api/upload-csv", {
-      method: "POST",
-      body: formData,
-    });
-
-    const data = await res.json();
+    const res = await uploadCSV(formData);
+const data = res.data;
 
     // dataset name comes from backend (single source of truth)
     addDataset(data.dataset);

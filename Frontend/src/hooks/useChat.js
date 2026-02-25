@@ -1,6 +1,27 @@
 import { useState, useRef, useEffect } from "react";
 import { askNLQ, sendChatMessage } from "../services/api";
 
+function getSimpleEnglishAnswer(question, data) {
+  if (!Array.isArray(data) || data.length === 0) return null;
+
+  // COUNT
+  if (data.length === 1 && "count" in data[0]) {
+    return `There are ${data[0].count} records in the selected dataset.`;
+  }
+
+  // Single value (sum, avg, etc.)
+  if (data.length === 1 && "value" in data[0]) {
+    return `The result is ${data[0].value}.`;
+  }
+
+  // Multiple rows
+  if (data.length > 1) {
+    return `I found ${data.length} matching records in the dataset.`;
+  }
+
+  return null;
+}
+
 export function useChat() {
   /* =========================================================
      STATE
@@ -203,11 +224,26 @@ useEffect(() => {
     return;
   }
 
+  const isSummaryQuestion =
+  text.toLowerCase().includes("summary") ||
+  text.toLowerCase().includes("what is this file") ||
+  text.toLowerCase().includes("what is this dataset");
+
+ if (isSummaryQuestion) {
+  // Skip NLQ for summaries → let AI handle later
+  res = {
+    data: {
+      data: [],
+      answer: "This dataset contains structured data. I can summarize it once schema-based summaries are enabled."
+    }
+  };
+} else {
   res = await askNLQ({
     question: text,
     source,
     dataset,
   });
+}
 }
       // AI CHAT
       else {
@@ -217,7 +253,28 @@ useEffect(() => {
         });
       }
 
-     const fullText = res.data.answer || res.data.botMsg;
+     const dataResult = res.data.data || [];
+
+// 1. Try to explain data in simple English
+let fullText = getSimpleEnglishAnswer(text, dataResult);
+
+// 2. Data exists but explanation failed
+if (!fullText && dataResult.length > 0) {
+  fullText = "I found the data, but I couldn’t summarize it clearly.";
+}
+
+// 3. Data does NOT exist
+if (dataResult.length === 0 && mode === "data") {
+  fullText = null; // allow AI fallback
+}
+
+// 4. Final fallback (AI)
+if (!fullText) {
+  fullText =
+    res.data.answer ||
+    res.data.botMsg ||
+    "I don’t know the answer.";
+}
 
 // Step 1: Add empty bot message first
 setSessions((prev) => {
@@ -236,13 +293,14 @@ setSessions((prev) => {
       ...session,
       messages: [
         ...updatedMessages,
-        {
-          text: "",
-          sender: "bot",
-          time: getTime(),
-          data: res.data.data || [],
-          query: res.data.generatedQuery || null,
-        },
+       {
+  text: "",
+  sender: "bot",
+  time: getTime(),
+  data: Array.isArray(res.data.data) && res.data.data.length > 0
+    ? res.data.data
+    : null,
+},
       ],
     },
   };

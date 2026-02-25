@@ -62,17 +62,7 @@ export default function MessageBubble({
             </tbody>
           </table>
 
-          {/* QUERY VIEW */}
-          {query && (
-            <details className="mt-3 text-xs text-gray-400 px-3 pb-3">
-              <summary className="cursor-pointer text-green-400 hover:underline">
-                View generated query
-              </summary>
-             <pre className="mt-2 bg-black/70 p-3 rounded overflow-x-auto text-xs">
-                {JSON.stringify(query, null, 2)}
-              </pre>
-            </details>
-          )}
+          
         </div>
       )}
 

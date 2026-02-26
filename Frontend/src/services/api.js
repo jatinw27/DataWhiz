@@ -54,4 +54,7 @@ export const askNLQ = (payload) =>
 export const sendChatMessage = (payload) =>
   api.post("/chatbot/message", payload);
 
+export const getDatasetSummary = (name) =>
+  api.get(`/datasets/${name}/summary`);
+
 export default api;

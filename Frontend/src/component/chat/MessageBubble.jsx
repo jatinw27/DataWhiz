@@ -5,7 +5,6 @@ export default function MessageBubble({
   sender,
   data,
   time,
-  query,
   status,
   isGrouped,
 }) {
@@ -61,8 +60,6 @@ export default function MessageBubble({
               ))}
             </tbody>
           </table>
-
-          
         </div>
       )}
 

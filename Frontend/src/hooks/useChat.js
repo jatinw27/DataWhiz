@@ -1,56 +1,49 @@
 import { useState, useRef, useEffect } from "react";
-import { askNLQ, sendChatMessage } from "../services/api";
+import { askNLQ, sendChatMessage, getDatasetSummary } from "../services/api";
 
-function getSimpleEnglishAnswer(question, data) {
+
+/* =========================
+   SIMPLE ENGLISH EXPLANATION
+========================= */
+function getSimpleEnglishAnswer(question, data, dataset) {
   if (!Array.isArray(data) || data.length === 0) return null;
 
   // COUNT
   if (data.length === 1 && "count" in data[0]) {
-    return `There are ${data[0].count} records in the selected dataset.`;
+    return `There are ${data[0].count} records in the "${dataset}" dataset.`;
   }
 
-  // Single value (sum, avg, etc.)
+  // SINGLE VALUE (SUM / AVG / etc.)
   if (data.length === 1 && "value" in data[0]) {
-    return `The result is ${data[0].value}.`;
+    return `The calculated result is ${data[0].value}.`;
   }
 
-  // Multiple rows
+  // MULTIPLE ROWS
   if (data.length > 1) {
-    return `I found ${data.length} matching records in the dataset.`;
+    return `I found ${data.length} matching records in the "${dataset}" dataset.`;
   }
 
   return null;
 }
 
 export function useChat() {
-  /* =========================================================
+  /* =========================
      STATE
-     ========================================================= */
-
-  // All chat sessions stored as { [sessionId]: { id, title, messages } }
+  ========================= */
   const [sessions, setSessions] = useState({});
-
-  // Currently active chat session
   const [activeSessionId, setActiveSessionId] = useState(null);
-
-  // Global loading indicator (bot typing)
   const [loading, setLoading] = useState(false);
-
-  // Used for auto-scrolling chat to bottom
   const bottomRef = useRef(null);
 
-  /* =========================================================
+  /* =========================
      HELPERS
-     ========================================================= */
-
-  // Format time for message timestamps
+  ========================= */
   const getTime = () =>
     new Date().toLocaleTimeString([], {
       hour: "2-digit",
       minute: "2-digit",
     });
 
-  // Generate chat title from first user message
   const generateTitle = (text) =>
     text
       .replace(/[^a-zA-Z0-9 ]/g, "")
@@ -58,60 +51,49 @@ export function useChat() {
       .slice(0, 5)
       .join(" ");
 
-  /* =========================================================
-     CREATE NEW SESSION
-     ========================================================= */
-
+  /* =========================
+     SESSION MANAGEMENT
+  ========================= */
   const createNewSession = () => {
     const id = "chat_" + Date.now();
 
-    const newSession = {
-      id,
-      title: "New Chat",
-      messages: [],
-      createdAt: Date.now(),
-    };
-
     setSessions((prev) => ({
       ...prev,
-      [id]: newSession,
+      [id]: {
+        id,
+        title: "New Chat",
+        messages: [],
+        createdAt: Date.now(),
+      },
     }));
 
     setActiveSessionId(id);
   };
 
   const renameSession = (id, newTitle) => {
-  setSessions(prev => ({
-    ...prev,
-    [id]: {
-      ...prev[id],
-      title: newTitle,
-    },
-  }));
-};
+    setSessions((prev) => ({
+      ...prev,
+      [id]: { ...prev[id], title: newTitle },
+    }));
+  };
 
-const deleteSession = (id) => {
-  setSessions(prev => {
-    const copy = { ...prev };
-    delete copy[id];
+  const deleteSession = (id) => {
+    setSessions((prev) => {
+      const copy = { ...prev };
+      delete copy[id];
+      setActiveSessionId(Object.keys(copy)[0] || null);
+      return copy;
+    });
+  };
 
-    const remainingIds = Object.keys(copy);
-    setActiveSessionId(remainingIds[0] || null);
-
-    return copy;
-  });
-};
-
-
-useEffect(() => {
-  if (!activeSessionId && Object.keys(sessions).length === 0) {
-    createNewSession();
-  }
-}, [activeSessionId, sessions]);
-
-  /* =========================================================
-     LOAD SESSIONS FROM LOCAL STORAGE (ON MOUNT)
-     ========================================================= */
+  /* =========================
+     INIT / PERSIST
+  ========================= */
+  useEffect(() => {
+    if (!activeSessionId && Object.keys(sessions).length === 0) {
+      createNewSession();
+    }
+  }, [activeSessionId, sessions]);
 
   useEffect(() => {
     const savedSessions = localStorage.getItem("chatSessions");
@@ -120,53 +102,30 @@ useEffect(() => {
     if (savedSessions) {
       const parsed = JSON.parse(savedSessions);
       setSessions(parsed);
-
-      // Ensure active session always exists
-      const validActive =
+      setActiveSessionId(
         savedActive && parsed[savedActive]
           ? savedActive
-          : Object.keys(parsed)[0];
-
-      setActiveSessionId(validActive);
+          : Object.keys(parsed)[0]
+      );
     } else {
-      // First time user → create default chat
       createNewSession();
     }
   }, []);
-
-  /* =========================================================
-     PERSIST SESSIONS TO LOCAL STORAGE
-     ========================================================= */
 
   useEffect(() => {
     localStorage.setItem("chatSessions", JSON.stringify(sessions));
     localStorage.setItem("activeChatSession", activeSessionId);
   }, [sessions, activeSessionId]);
 
-  /* =========================================================
-     AUTO SCROLL TO BOTTOM WHEN MESSAGES CHANGE
-     ========================================================= */
-
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [sessions[activeSessionId]?.messages, loading]);
 
-  /* =========================================================
-     SEND MESSAGE (AI OR DATA MODE)
-     ========================================================= */
-
-
+  /* =========================
+     SEND MESSAGE
+  ========================= */
   const sendMessage = async ({ text, mode, source, dataset }) => {
-    console.log("sendMessage called with:", { text, mode, source, dataset });
-    console.log("DATA MODE PAYLOAD", {
-  mode,
-  source,
-  dataset,
-});
-    if (!text?.trim() ) return;
-    
-  const sessionId = activeSessionId;
-  if (!sessionId) return;
+    if (!text?.trim() || !activeSessionId) return;
 
     const userMessage = {
       text,
@@ -175,18 +134,17 @@ useEffect(() => {
       time: getTime(),
     };
 
-    // Add user message immediately
+    // Add user message
     setSessions((prev) => {
       const session = prev[activeSessionId];
-      const isFirstMessage = session.messages.length === 0;
-
       return {
         ...prev,
         [activeSessionId]: {
           ...session,
-          title: isFirstMessage
-            ? generateTitle(text)
-            : session.title,
+          title:
+            session.messages.length === 0
+              ? generateTitle(text)
+              : session.title,
           messages: [...session.messages, userMessage],
         },
       };
@@ -197,55 +155,47 @@ useEffect(() => {
     try {
       let res;
 
-      // DATA CHAT (CSV / DB)
+      /* ===== DATA CHAT ===== */
       if (mode === "data") {
-  // HARD validation
-  if (!source || !dataset) {
-    setSessions((prev) => {
-      const session = prev[activeSessionId];
+        if (!source || !dataset) {
+          throw new Error("Invalid data source or dataset");
+        }
 
-      return {
-        ...prev,
-        [activeSessionId]: {
-          ...session,
-          messages: [
-            ...session.messages,
-            {
-              text: "Please select a valid data source and dataset before asking a question.",
-              sender: "bot",
-              time: getTime(),
-            },
-          ],
-        },
-      };
-    });
+        const isSummaryQuestion =
+          text.toLowerCase().includes("summary") ||
+          text.toLowerCase().includes("what is this file") ||
+          text.toLowerCase().includes("what is this dataset");
 
-    setLoading(false);
-    return;
-  }
+        if (isSummaryQuestion) {
+  const summaryRes = await getDatasetSummary(dataset);
 
-  const isSummaryQuestion =
-  text.toLowerCase().includes("summary") ||
-  text.toLowerCase().includes("what is this file") ||
-  text.toLowerCase().includes("what is this dataset");
+  const { columns, rowCount, sample } = summaryRes.data;
 
- if (isSummaryQuestion) {
-  // Skip NLQ for summaries → let AI handle later
+  const summaryText = `
+This dataset contains ${rowCount} records.
+
+It includes the following fields:
+${columns.join(", ")}.
+
+Sample data shows that this dataset is related to customer information.
+  `.trim();
+
   res = {
     data: {
-      data: [],
-      answer: "This dataset contains structured data. I can summarize it once schema-based summaries are enabled."
-    }
+      data: sample,
+      answer: summaryText,
+    },
   };
 } else {
-  res = await askNLQ({
-    question: text,
-    source,
-    dataset,
-  });
-}
-}
-      // AI CHAT
+          res = await askNLQ({
+            question: text,
+            source,
+            dataset,
+          });
+        }
+      }
+
+      /* ===== AI CHAT ===== */
       else {
         res = await sendChatMessage({
           text,
@@ -253,107 +203,68 @@ useEffect(() => {
         });
       }
 
-     const dataResult = res.data.data || [];
+      const dataResult = res.data?.data || [];
 
-// 1. Try to explain data in simple English
-let fullText = getSimpleEnglishAnswer(text, dataResult);
+      /* ===== RESPONSE PRIORITY ===== */
+      let fullText =
+        getSimpleEnglishAnswer(text, dataResult, dataset) ||
+        res.data?.answer ||
+        res.data?.botMsg ||
+        `I could not find this information in the "${dataset}" dataset.`;
 
-// 2. Data exists but explanation failed
-if (!fullText && dataResult.length > 0) {
-  fullText = "I found the data, but I couldn’t summarize it clearly.";
-}
-
-// 3. Data does NOT exist
-if (dataResult.length === 0 && mode === "data") {
-  fullText = null; // allow AI fallback
-}
-
-// 4. Final fallback (AI)
-if (!fullText) {
-  fullText =
-    res.data.answer ||
-    res.data.botMsg ||
-    "I don’t know the answer.";
-}
-
-// Step 1: Add empty bot message first
-setSessions((prev) => {
-  const session = prev[activeSessionId];
-  const updatedMessages = [...session.messages];
-
-  // mark user as sent
-  updatedMessages[updatedMessages.length - 1] = {
-    ...updatedMessages[updatedMessages.length - 1],
-    status: "sent",
-  };
-
-  return {
-    ...prev,
-    [activeSessionId]: {
-      ...session,
-      messages: [
-        ...updatedMessages,
-       {
-  text: "",
-  sender: "bot",
-  time: getTime(),
-  data: Array.isArray(res.data.data) && res.data.data.length > 0
-    ? res.data.data
-    : null,
-},
-      ],
-    },
-  };
-});
-
-// Step 2: Streaming effect
-let index = 0;
-
-const interval = setInterval(() => {
-  index++;
-
-  setSessions((prev) => {
-    const session = prev[activeSessionId];
-    const updatedMessages = [...session.messages];
-
-    const lastIndex = updatedMessages.length - 1;
-
-    updatedMessages[lastIndex] = {
-      ...updatedMessages[lastIndex],
-      text: fullText.slice(0, index),
-    };
-
-    return {
-      ...prev,
-      [activeSessionId]: {
-        ...session,
-        messages: updatedMessages,
-      },
-    };
-  });
-
-  if (index >= fullText.length) {
-    clearInterval(interval);
-  }
-}, 15); // speed (lower = faster)
-
-    } catch (err) {
-      // Mark last user message as error
+      /* ===== ADD BOT MESSAGE ===== */
       setSessions((prev) => {
         const session = prev[activeSessionId];
-        const updatedMessages = [...session.messages];
+        const updated = [...session.messages];
 
-        updatedMessages[updatedMessages.length - 1] = {
-          ...updatedMessages[updatedMessages.length - 1],
-          status: "error",
+        updated[updated.length - 1] = {
+          ...updated[updated.length - 1],
+          status: "sent",
         };
 
         return {
           ...prev,
           [activeSessionId]: {
             ...session,
-            messages: updatedMessages,
+            messages: [
+              ...updated,
+              {
+                text: "",
+                sender: "bot",
+                time: getTime(),
+                data: Array.isArray(dataResult) && dataResult.length > 0
+                  ? dataResult
+                  : null,
+              },
+            ],
           },
+        };
+      });
+
+      /* ===== STREAM TEXT ===== */
+      let i = 0;
+      const interval = setInterval(() => {
+        i++;
+        setSessions((prev) => {
+          const session = prev[activeSessionId];
+          const msgs = [...session.messages];
+          msgs[msgs.length - 1].text = fullText.slice(0, i);
+          return {
+            ...prev,
+            [activeSessionId]: { ...session, messages: msgs },
+          };
+        });
+
+        if (i >= fullText.length) clearInterval(interval);
+      }, 15);
+    } catch (err) {
+      setSessions((prev) => {
+        const session = prev[activeSessionId];
+        const msgs = [...session.messages];
+        msgs[msgs.length - 1].status = "error";
+        return {
+          ...prev,
+          [activeSessionId]: { ...session, messages: msgs },
         };
       });
     } finally {
@@ -361,21 +272,19 @@ const interval = setInterval(() => {
     }
   };
 
-  /* =========================================================
-     EXPOSE API
-     ========================================================= */
-
+  /* =========================
+     EXPORT
+  ========================= */
   return {
-    sessions,                    // all chat sessions
-    activeSessionId,             // current session id
-    setActiveSessionId,          // switch chats
-    createNewSession,            // new chat button
-     renameSession,
+    sessions,
+    activeSessionId,
+    setActiveSessionId,
+    createNewSession,
+    renameSession,
     deleteSession,
     messages: sessions[activeSessionId]?.messages || [],
     loading,
     sendMessage,
     bottomRef,
-   
   };
 }

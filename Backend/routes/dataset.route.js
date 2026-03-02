@@ -9,26 +9,25 @@ const router = express.Router();
 router.get("/:name/summary", async (req, res) => {
   try {
     const { name } = req.params;
-
     const datasource = dataSourceManager.get(name);
 
-    // Get schema
     const schema = await datasource.getSchema();
     const table = Object.keys(schema)[0];
     const columns = schema[table];
 
-    // Get small sample
-    const sample = await datasource.runQuery({
+    // ✅ real total row count
+    const countResult = await datasource.runQuery({
       table,
-      columns,
+      aggregation: "COUNT",
     });
+
+    const totalRows = countResult[0]?.count || 0;
 
     res.json({
       dataset: name,
       table,
       columns,
-      rowCount: sample.length,
-      sample: sample.slice(0, 3),
+      totalRows,
     });
   } catch (err) {
     res.status(400).json({ error: err.message });

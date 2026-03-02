@@ -1,6 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { askNLQ, sendChatMessage, getDatasetSummary } from "../services/api";
-
+import {
+  askNLQ,
+  sendChatMessage,
+  getDatasetSummary,
+} from "../services/api";
 
 /* =========================
    SIMPLE ENGLISH EXPLANATION
@@ -13,7 +16,7 @@ function getSimpleEnglishAnswer(question, data, dataset) {
     return `There are ${data[0].count} records in the "${dataset}" dataset.`;
   }
 
-  // SINGLE VALUE (SUM / AVG / etc.)
+  // SINGLE VALUE
   if (data.length === 1 && "value" in data[0]) {
     return `The calculated result is ${data[0].value}.`;
   }
@@ -87,7 +90,7 @@ export function useChat() {
   };
 
   /* =========================
-     INIT / PERSIST
+     INIT & PERSIST
   ========================= */
   useEffect(() => {
     if (!activeSessionId && Object.keys(sessions).length === 0) {
@@ -127,6 +130,12 @@ export function useChat() {
   const sendMessage = async ({ text, mode, source, dataset }) => {
     if (!text?.trim() || !activeSessionId) return;
 
+    // ✅ DEFINE ONCE (important fix)
+    const isSummaryQuestion =
+      text.toLowerCase().includes("summary") ||
+      text.toLowerCase().includes("what is this file") ||
+      text.toLowerCase().includes("what is this dataset");
+
     const userMessage = {
       text,
       sender: "user",
@@ -161,32 +170,31 @@ export function useChat() {
           throw new Error("Invalid data source or dataset");
         }
 
-        const isSummaryQuestion =
-          text.toLowerCase().includes("summary") ||
-          text.toLowerCase().includes("what is this file") ||
-          text.toLowerCase().includes("what is this dataset");
-
+        // ✅ SUMMARY PATH
         if (isSummaryQuestion) {
-  const summaryRes = await getDatasetSummary(dataset);
+          const summaryRes = await getDatasetSummary(dataset);
+          const { dataset: name, totalRows, columns } = summaryRes.data;
 
-  const { columns, rowCount, sample } = summaryRes.data;
+          const summaryText = `
+This dataset is called "${name}".
 
-  const summaryText = `
-This dataset contains ${rowCount} records.
+It contains ${totalRows} records.
 
-It includes the following fields:
+The dataset includes the following fields:
 ${columns.join(", ")}.
 
-Sample data shows that this dataset is related to customer information.
-  `.trim();
+This dataset stores structured customer information and can be used for analysis, filtering, and reporting.
+          `.trim();
 
-  res = {
-    data: {
-      data: sample,
-      answer: summaryText,
-    },
-  };
-} else {
+          res = {
+            data: {
+              answer: summaryText,
+              data: null, // 🚫 no table for summary
+            },
+          };
+        }
+        // ✅ NORMAL DATA QUESTION
+        else {
           res = await askNLQ({
             question: text,
             source,
@@ -205,12 +213,18 @@ Sample data shows that this dataset is related to customer information.
 
       const dataResult = res.data?.data || [];
 
-      /* ===== RESPONSE PRIORITY ===== */
-      let fullText =
-        getSimpleEnglishAnswer(text, dataResult, dataset) ||
-        res.data?.answer ||
-        res.data?.botMsg ||
-        `I could not find this information in the "${dataset}" dataset.`;
+      /* ===== FINAL TEXT ===== */
+      let fullText;
+
+      if (isSummaryQuestion) {
+        fullText = res.data.answer;
+      } else {
+        fullText =
+          getSimpleEnglishAnswer(text, dataResult, dataset) ||
+          res.data?.answer ||
+          res.data?.botMsg ||
+          `I could not find this information in the "${dataset}" dataset.`;
+      }
 
       /* ===== ADD BOT MESSAGE ===== */
       setSessions((prev) => {
@@ -232,16 +246,17 @@ Sample data shows that this dataset is related to customer information.
                 text: "",
                 sender: "bot",
                 time: getTime(),
-                data: Array.isArray(dataResult) && dataResult.length > 0
-                  ? dataResult
-                  : null,
+                data:
+                  Array.isArray(dataResult) && dataResult.length > 0
+                    ? dataResult
+                    : null,
               },
             ],
           },
         };
       });
 
-      /* ===== STREAM TEXT ===== */
+      /* ===== STREAM EFFECT ===== */
       let i = 0;
       const interval = setInterval(() => {
         i++;

@@ -3,58 +3,51 @@ import csv from "csv-parser";
 import { BaseDataSource } from "./base.datasource.js";
 
 export class CSVDataSource extends BaseDataSource {
-    constructor(filePath, tablename = "data") {
-        super();
-        this.filePath = filePath;
-        this.tableName = tablename || "data";
-        this.rows = [];
-        this.loaded = false;
-    }
+  constructor(filePath, tablename = "data") {
+    super();
+    this.filePath = filePath;
+    this.tableName = tablename || "data";
+    this.rows = [];
+    this.loaded = false;
+  }
 
-    async loadFile() {
-        if(this.loaded) return;
+  async loadFile() {
+    if (this.loaded) return;
 
-        return new Promise((resolve, reject) => {
-            fs.createReadStream(this.filePath)
-                .pipe(csv())
-                .on("data", row => {
-                     // Convert numeric values automatically
-                     for (const key in row) {
-                        if(!isNaN(row[key])) {
-                            row[key] = Number(row[key]);
-                        }
-                     }
-                     this.rows.push(row);
-                })
-                .on("end", () => {
-                    this.loaded = true;
-                    resolve();
-                })
-                .on("error", reject);
-        });
-    }
+    return new Promise((resolve, reject) => {
+      fs.createReadStream(this.filePath)
+        .pipe(csv())
+        .on("data", row => {
+          for (const key in row) {
+            if (!isNaN(row[key])) {
+              row[key] = Number(row[key]);
+            }
+          }
+          this.rows.push(row);
+        })
+        .on("end", () => {
+          this.loaded = true;
+          resolve();
+        })
+        .on("error", reject);
+    });
+  }
 
-    async getSchema() {
+  async getSchema() {
     await this.loadFile();
-
     if (!this.rows.length) return {};
 
-console.log("CSV TABLE NAME:", this.tableName);
-
     return {
-      [this.tableName]: Object.keys(this.rows[0])
+      [this.tableName]: Object.keys(this.rows[0]),
     };
   }
 
   async runQuery(query) {
     await this.loadFile();
 
-    // query format: { table, columns, condition }
-    const { table, columns, condition, aggregation } = query;
-
+    const { columns, condition, aggregation } = query;
     let result = [...this.rows];
 
-    // WHERE condition (simple)
     if (condition) {
       const [field, operator, value] = condition.split(" ");
       const numValue = Number(value);
@@ -67,20 +60,19 @@ console.log("CSV TABLE NAME:", this.tableName);
       });
     }
 
-    // AGGREGATION
- if (aggregation && aggregation.toUpperCase().includes("COUNT")) {
-  return [{ count: result.length }];
-}
-
+    if (aggregation && aggregation.toUpperCase().includes("COUNT")) {
+      return [{ count: result.length }];
+    }
 
     if (aggregation) {
       const match = aggregation.match(/(AVG|MIN|MAX|SUM)\((.+)\)/i);
-
       if (match) {
         const func = match[1].toUpperCase();
         const field = match[2];
 
-        const values = result.map(r => r[field]).filter(v => typeof v === "number");
+        const values = result
+          .map(r => r[field])
+          .filter(v => typeof v === "number");
 
         let value = null;
         if (func === "AVG") value = values.reduce((a, b) => a + b, 0) / values.length;
@@ -92,7 +84,6 @@ console.log("CSV TABLE NAME:", this.tableName);
       }
     }
 
-    // SELECT columns
     if (columns && columns.length) {
       result = result.map(row => {
         const filtered = {};
@@ -103,6 +94,45 @@ console.log("CSV TABLE NAME:", this.tableName);
 
     return result;
   }
+
+  // ✅ THIS FIXES YOUR PROBLEM
+  getRowCount() {
+    return this.rows.length;
+  }
+
+  getColumnStats() {
+  const stats = {};
+
+  if (!this.rows.length) return stats;
+
+  const columns = Object.keys(this.rows[0]);
+
+  columns.forEach(col => {
+    const values = this.rows.map(r => r[col]).filter(v => v !== null && v !== "");
+
+    const numeric = values.filter(v => typeof v === "number");
+    const dates = values.filter(v => !isNaN(Date.parse(v)));
+
+    stats[col] = {
+      type:
+        numeric.length === values.length
+          ? "number"
+          : dates.length === values.length
+          ? "date"
+          : "string",
+      uniqueCount: new Set(values).size,
+      sample: values.slice(0, 3),
+    };
+
+    if (dates.length === values.length && dates.length > 0) {
+      const sorted = dates.map(d => new Date(d)).sort((a, b) => a - b);
+      stats[col].min = sorted[0];
+      stats[col].max = sorted[sorted.length - 1];
+    }
+  });
+
+  return stats;
+}
 
   getType() {
     return "csv";

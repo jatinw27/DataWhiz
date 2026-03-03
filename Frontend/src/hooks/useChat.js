@@ -173,18 +173,24 @@ export function useChat() {
         // ✅ SUMMARY PATH
         if (isSummaryQuestion) {
           const summaryRes = await getDatasetSummary(dataset);
-          const { dataset: name, totalRows, columns } = summaryRes.data;
+         const { dataset: name, totalRows, columnStats } = summaryRes.data;
 
-          const summaryText = `
+const columnCount = Object.keys(columnStats).length;
+const numericCols = Object.values(columnStats).filter(c => c.type === "number").length;
+const dateCols = Object.values(columnStats).filter(c => c.type === "date").length;
+
+const summaryText = `
 This dataset is called "${name}".
 
-It contains ${totalRows} records.
+It contains ${totalRows} records across ${columnCount} fields.
 
-The dataset includes the following fields:
-${columns.join(", ")}.
+The data includes:
+- ${numericCols} numeric columns
+- ${dateCols} date columns
+- ${columnCount - numericCols - dateCols} text-based columns
 
-This dataset stores structured customer information and can be used for analysis, filtering, and reporting.
-          `.trim();
+This dataset appears suitable for customer analysis, reporting, and trend exploration.
+`.trim();
 
           res = {
             data: {

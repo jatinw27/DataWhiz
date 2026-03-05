@@ -256,6 +256,7 @@ This dataset appears suitable for customer analysis, reporting, and trend explor
                   Array.isArray(dataResult) && dataResult.length > 0
                     ? dataResult
                     : null,
+                     chart: res.data?.chart || null
               },
             ],
           },

@@ -1,9 +1,11 @@
 import { motion } from "framer-motion";
+import DataChart from "../DataChart.jsx";
 
 export default function MessageBubble({
   text,
   sender,
   data,
+  chart,
   time,
   status,
   isGrouped,
@@ -62,6 +64,13 @@ export default function MessageBubble({
           </table>
         </div>
       )}
+
+      {/* CHART */}
+{chart && data && (
+  <div className="mt-4">
+    <DataChart data={data} chart={chart} />
+  </div>
+)}
 
       {/* STATUS (only for user messages) */}
       {sender === "user" && (

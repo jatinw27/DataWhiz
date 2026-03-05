@@ -19,9 +19,9 @@ export class CSVDataSource extends BaseDataSource {
         .pipe(csv())
         .on("data", row => {
           for (const key in row) {
-            if (!isNaN(row[key])) {
-              row[key] = Number(row[key]);
-            }
+            if (row[key] !== "" && !isNaN(row[key])) {
+  row[key] = Number(row[key]);
+}
           }
           this.rows.push(row);
         })
@@ -46,7 +46,7 @@ export class CSVDataSource extends BaseDataSource {
     await this.loadFile();
 
     const { columns, condition, aggregation } = query;
-    let result = [...this.rows];
+    let result = this.rows;
 
     if (condition) {
       const [field, operator, value] = condition.split(" ");
@@ -75,7 +75,7 @@ export class CSVDataSource extends BaseDataSource {
           .filter(v => typeof v === "number");
 
         let value = null;
-        if (func === "AVG") value = values.reduce((a, b) => a + b, 0) / values.length;
+        if (func === "AVG") value = values.length ? values.reduce((a, b) => a + b, 0) / values.length:0;
         if (func === "MIN") value = Math.min(...values);
         if (func === "MAX") value = Math.max(...values);
         if (func === "SUM") value = values.reduce((a, b) => a + b, 0);
@@ -96,11 +96,14 @@ export class CSVDataSource extends BaseDataSource {
   }
 
   // ✅ THIS FIXES YOUR PROBLEM
-  getRowCount() {
-    return this.rows.length;
-  }
+ async getRowCount() {
+  await this.loadFile();
+  return this.rows.length;
+}
 
-  getColumnStats() {
+ async getColumnStats() {
+  await this.loadFile();
+
   const stats = {};
 
   if (!this.rows.length) return stats;
@@ -132,6 +135,53 @@ export class CSVDataSource extends BaseDataSource {
   });
 
   return stats;
+}
+
+async getInsights() {
+  await this.loadFile();
+
+  const insights = [];
+
+  if (!this.rows.length) return insights;
+
+  const columns = Object.keys(this.rows[0]);
+
+  columns.forEach(col => {
+    const values = this.rows.map(r => r[col]);
+
+    // Missing values
+    const missing = values.filter(v => v === null || v === "").length;
+
+    if (missing > 0) {
+      insights.push({
+        type: "missing",
+        column: col,
+        count: missing
+      });
+    }
+
+    // Top values
+    const freq = {};
+    values.forEach(v => {
+      if (v !== null && v !== "") {
+        freq[v] = (freq[v] || 0) + 1;
+      }
+    });
+
+    const sorted = Object.entries(freq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3);
+
+    if (sorted.length > 0) {
+      insights.push({
+        type: "topValues",
+        column: col,
+        values: sorted
+      });
+    }
+  });
+
+  return insights;
 }
 
   getType() {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Menu } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import Header from "../component/layout/Header.jsx";
 import ChatWindow from "../component/chat/ChatWindow.jsx"
@@ -96,6 +97,19 @@ export default function Chat() {
               setMongoUri={datasets.setMongoUri}
               setSqliteFile={datasets.setSqliteFile}
             />
+
+            {/* DATASET DASHBOARD LINK */}
+    {datasets.selectedDataset && (
+      <div className="mt-3 text-sm">
+        <Link
+          to={`/dataset/${datasets.selectedDataset}`}
+          className="text-green-600 hover:underline font-medium"
+        >
+          📈 View Dataset Dashboard
+        </Link>
+      </div>
+    )}
+
           </div>
         )}
 

@@ -8,6 +8,7 @@ import { datasetManager, dataSourceManager } from "../core/managers.js";
 import { buildMongoQuery } from "./mongo-query.builder.js";
 import { aiGenerateQuery } from "./ai-structured.service.js";
 import { detectChart } from "../utils/chartDetector.js";
+import { generateInsights } from "../utils/insightGenerator.js";
 
 export async function handleNLQ(req, res) {
   const { question, text, source = "sqlite", dataset } = req.body;
@@ -99,11 +100,13 @@ export async function handleNLQ(req, res) {
   }
 
 const chart = detectChart(resultRows);
+const insights = generateInsights(resultRows);
 
 return res.json({
   question: finalQuestion,
   generatedQuery,
   answer: toNaturalLanguage(resultRows),
+  insights,
   data: resultRows,
   chart,
   source

@@ -226,6 +226,7 @@ This dataset appears suitable for customer analysis, reporting, and trend explor
         fullText = res.data.answer;
       } else {
         fullText =
+          res.data?.insights ||
           getSimpleEnglishAnswer(text, dataResult, dataset) ||
           res.data?.answer ||
           res.data?.botMsg ||
@@ -256,7 +257,7 @@ This dataset appears suitable for customer analysis, reporting, and trend explor
                   Array.isArray(dataResult) && dataResult.length > 0
                     ? dataResult
                     : null,
-                     chart: res.data?.chart || null
+                chart: res.data?.chart || null
               },
             ],
           },

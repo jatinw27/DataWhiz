@@ -46,7 +46,7 @@ export class CSVDataSource extends BaseDataSource {
     await this.loadFile();
 
     const { columns, condition, aggregation } = query;
-    let result = this.rows;
+    let result = [...this.rows];
 
     if (condition) {
       const [field, operator, value] = condition.split(" ");
@@ -78,7 +78,9 @@ export class CSVDataSource extends BaseDataSource {
         if (func === "AVG") value = values.length ? values.reduce((a, b) => a + b, 0) / values.length:0;
         if (func === "MIN") value = Math.min(...values);
         if (func === "MAX") value = Math.max(...values);
-        if (func === "SUM") value = values.reduce((a, b) => a + b, 0);
+        if (func === "SUM") value = values.length
+  ? values.reduce((a, b) => a + b, 0)
+  : 0;
 
         return [{ value }];
       }

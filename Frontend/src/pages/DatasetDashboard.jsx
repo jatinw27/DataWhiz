@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
-import DataChart from "../components/DataChart";
+import DataChart from "../component/DataChart.jsx";
 import { useParams } from "react-router-dom";
 
 export default function DatasetDashboard() {
@@ -10,7 +10,7 @@ const {name} = useParams();
 
   useEffect(() => {
 
-    api.get(`/dashboard/${name}`)
+    api.get(`/api/dashboard/${name}`)
       .then(res => setDashboard(res.data));
 
   }, [name]);
@@ -33,9 +33,12 @@ const {name} = useParams();
         </h2>
 
         {dashboard.insights?.map((i, idx) => (
-          <p key={idx} className="mb-2">
-            • {i.column} has interesting distribution
-          </p>
+         <p
+  key={idx}
+  className="bg-gray-100 dark:bg-[#1a1a1a] p-3 rounded-lg"
+>
+  💡 {i.text}
+</p>
         ))}
       </div>
 

@@ -1,23 +1,27 @@
-export function generateDashboard(dataSource) {
+export async function generateDashboard(dataSource) {
 
-  const stats = dataSource.getColumnStats();
-  const insights = dataSource.getInsights();
+  const stats = await dataSource.getColumnStats();
+  const insights = await dataSource.getInsights();
 
   const charts = [];
 
   Object.entries(stats).forEach(([col, info]) => {
 
+    // categorical column -> bar chart
     if (info.type === "string" && info.uniqueCount < 15) {
       charts.push({
         type: "bar",
-        column: col
+        x: col,
+        y: "count"
       });
     }
 
+    // numeric column -> histogram
     if (info.type === "number") {
       charts.push({
         type: "histogram",
-        column: col
+        x: col,
+        y: col
       });
     }
 

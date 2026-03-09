@@ -9,16 +9,21 @@ import {
 
 export default function DataChart({ data, chart }) {
 
-  if (!chart) return null;
+  // safety checks
+  if (!chart || !data || data.length === 0) {
+    return null;
+  }
 
   return (
-    <ResponsiveContainer width="100%" height={250}>
-      <BarChart data={data}>
-        <XAxis dataKey={chart.x} />
-        <YAxis />
-        <Tooltip />
-        <Bar dataKey={chart.y} />
-      </BarChart>
-    </ResponsiveContainer>
+    <div className="w-full h-[250px] mt-4">
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={data}>
+          <XAxis dataKey={chart.x} />
+          <YAxis />
+          <Tooltip />
+          <Bar dataKey={chart.y} />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
   );
 }

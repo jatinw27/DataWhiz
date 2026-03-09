@@ -83,7 +83,7 @@ app.use("/api/upload-csv", uploadRoutes);
 app.use("/api/datasets", datasetRoutes);
 app.use("/api/mongo", mongoRoute);
 app.use("/api/auth", authRoutes);
-app.use("/api/dasdhboard", dashboardRoutes)
+app.use("/api/dasdhboard", dashboardRoutes);
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

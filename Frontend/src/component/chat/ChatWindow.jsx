@@ -18,10 +18,15 @@ export default function ChatWindow({ messages, loading, bottomRef }) {
 
         return (
           <MessageBubble
-            key={i}
-            {...msg}
-            isGrouped={isGrouped}
-          />
+  key={i}
+  text={msg.text}
+  sender={msg.sender}
+  data={msg.data}
+  chart={msg.chart}
+  time={msg.time}
+  status={msg.status}
+  isGrouped={msg.isGrouped}
+/>
         );
       })}
       

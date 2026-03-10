@@ -102,10 +102,14 @@ export async function handleNLQ(req, res) {
 const chart = detectChart(resultRows);
 const insights = generateInsights(resultRows);
 
+const answer =
+  insights ||
+  toNaturalLanguage(resultRows);
+
 return res.json({
   question: finalQuestion,
   generatedQuery,
-  answer: toNaturalLanguage(resultRows),
+  answer,
   insights,
   data: resultRows,
   chart,

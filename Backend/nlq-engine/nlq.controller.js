@@ -9,6 +9,7 @@ import { buildMongoQuery } from "./mongo-query.builder.js";
 import { aiGenerateQuery } from "./ai-structured.service.js";
 import { detectChart } from "../utils/chartDetector.js";
 import { generateInsights } from "../utils/insightGenerator.js";
+import { exploreDataset } from "../utils/datasetExplorer.js";
 
 export async function handleNLQ(req, res) {
   const { question, text, source = "sqlite", dataset } = req.body;
@@ -33,7 +34,18 @@ export async function handleNLQ(req, res) {
   if (!dataSource) {
     return res.json({ answer: "Invalid data source selected." });
   }
+  
+// 🔍 Dataset exploration questions
+const exploration = exploreDataset(dataSource, finalQuestion);
 
+if (exploration) {
+  return res.json({
+    question: finalQuestion,
+    answer: exploration.answer,
+    data: exploration.data,
+    source: "explorer"
+  });
+}
   // 1️⃣ Read schema
   const schema = await dataSource.getSchema();
 

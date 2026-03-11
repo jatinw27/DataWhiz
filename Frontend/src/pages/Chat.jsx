@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Menu } from "lucide-react";
 import { Link } from "react-router-dom";
 
+
 import Header from "../component/layout/Header.jsx";
 import ChatWindow from "../component/chat/ChatWindow.jsx"
 import DatasetSelector from "../component/chat/DatasetSelector.jsx";
 import InputBar from "../component/chat/InputBar.jsx";
 import ChatSessions from "../component/chat/ChatSessions.jsx";
+import DatasetInsights from "../component/DatasetInsights.jsx";
 
 import { useChat } from "../hooks/useChat";
 import { useDatasets } from "../hooks/useDatasets";
@@ -109,7 +111,12 @@ export default function Chat() {
         </Link>
       </div>
     )}
-
+{/* 🔥 AUTO AI DATASET INSIGHTS */}
+    {datasets.selectedDataset && (
+      <div className="mt-6">
+        <DatasetInsights dataset={datasets.selectedDataset} />
+      </div>
+    )}
           </div>
         )}
 

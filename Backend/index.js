@@ -19,7 +19,7 @@ import { CSVDataSource } from './data-sources/csv.datasource.js';
 import mongoRoute from "./routes/mongo.route.js";
 import authRoutes from "./routes/auth.routes.js";
 import dashboardRoutes from "./routes/dashboard.route.js";
-
+import analysisRoutes from "./routes/analysis.route.js"
 
 await dns.setServers(['8.8.8.8', '8.8.4.4']);
 
@@ -84,6 +84,7 @@ app.use("/api/datasets", datasetRoutes);
 app.use("/api/mongo", mongoRoute);
 app.use("/api/auth", authRoutes);
 app.use("/api/dasdhboard", dashboardRoutes);
+app.use("/api/analysis", analysisRoutes);
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);

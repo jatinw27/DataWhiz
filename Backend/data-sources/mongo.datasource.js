@@ -30,7 +30,11 @@ export class MongoDataSource extends BaseDataSource {
     for (const col of collections) {
       const sample = await db.collection(col.name).findOne();
       if (sample) {
-        schema[col.name] = Object.keys(sample);
+       schema[col.name] = Object.keys(sample).filter(
+  k => k !== "__v"
+);
+schema[col.name].push("_id");
+
       }
     }
 

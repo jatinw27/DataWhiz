@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react'
-import axios from 'axios';
 import { FaUserCircle } from 'react-icons/fa';
+import { useChat } from '../hooks/useChat.js';
+import { fetchDatasets, uploadCSV } from '../services/api.js';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 function Bot() {
     const [uploading, setUploading] = useState(false);
-    const [msg, setMsg] = useState([]);
     const [input, setInput] = useState("");
-    const [loading, setLoading] = useState(false);
     const [datasets, setDatasets] = useState([]);
     const [selectedDataset, setSelectedDataset] = useState("users");
     const [selectedSource, setSelectedSource] = useState("csv")
-    const bottomRef = useRef(null);
+    const { messages, loading, sendMessage, bottomRef } = useChat();
+
 
     const [sessionId] = useState(() => {
     return localStorage.getItem("myChatSession") || "user_" + Date.now();
@@ -21,9 +21,9 @@ function Bot() {
 console.log("API BASE =", import.meta.env.VITE_API_BASE_URL);
 
 
-    useEffect(() => {
-  bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-}, [msg, loading]);
+//     useEffect(() => {
+//   bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+// }, [msg, loading]);
 
     useEffect(() => {
       async function fetchDatasets() {
@@ -77,14 +77,9 @@ const handleCSVUpload = async (file) => {
   try {
     setUploading(true);
 
-    await axios.post(
-      `${API_BASE}/api/upload-csv`,
-      formData,
-      { headers: { "Content-Type": "multipart/form-data" } }
-    );
+    await uploadCSV(formData);
 
-    // 🔁 refresh datasets after upload
-    const res = await axios.get(`${API_BASE}/api/datasets`);
+    const res = await fetchDatasets();
     setDatasets(res.data.datasets || []);
     setSelectedDataset(res.data.datasets[0]);
 
@@ -96,6 +91,7 @@ const handleCSVUpload = async (file) => {
     setUploading(false);
   }
 };
+
 
 //     const handleSendMsg = async () => {
 //     if (!input.trim()) return;
@@ -131,68 +127,83 @@ const handleCSVUpload = async (file) => {
 //     }
 // };
 
-      const handleSendMsg = async () => {
+//       const handleSendMsg = async () => {
+//   if (!input.trim()) return;
+
+//   const userText = input.trim();
+
+//   if (isDataQuery(userText) && !selectedDataset) {
+//   alert("Please select a dataset first");
+//   return;
+// }
+
+
+
+//   // show user message immediately
+//   setMsg(prev => [...prev, { text: userText, sender: 'user' }]);
+//   setInput("");
+//   setLoading(true);
+
+//   try {
+//     let res;
+
+//     if (isDataQuery(userText)) {
+//       // 🔹 DATA QUESTION → NLQ ENGINE
+//       res = await axios.post(
+//   `${API_BASE}/api/nlq/ask`,
+//   {
+//     question: userText,
+//     source: selectedSource,
+//     dataset: selectedDataset
+//   }
+// );
+
+
+//       setMsg(prev => [
+//         ...prev,
+//         { text: res.data.answer, sender: 'bot' }
+//       ]);
+
+//     } else {
+//       // 🔹 NORMAL CHAT → AI CHATBOT
+//       res = await axios.post(
+//         `${API_BASE}/api/chatbot/message`,
+//         {
+//           text: userText,
+//           sessionId: sessionId
+//         }
+//       );
+
+//       setMsg(prev => [
+//         ...prev,
+//         { text: res.data.botMsg, sender: 'bot' }
+//       ]);
+//     }
+
+//   } catch (error) {
+//     console.error("Error:", error);
+//     setMsg(prev => [
+//       ...prev,
+//       { text: "Something went wrong. Please try again.", sender: 'bot' }
+//     ]);
+//   } finally {
+//     setLoading(false);
+//   }
+// };
+
+const handleSendMsg = () => {
   if (!input.trim()) return;
 
   const userText = input.trim();
 
-  if (isDataQuery(userText) && !selectedDataset) {
-  alert("Please select a dataset first");
-  return;
-}
-
-
-
-  // show user message immediately
-  setMsg(prev => [...prev, { text: userText, sender: 'user' }]);
-  setInput("");
-  setLoading(true);
-
-  try {
-    let res;
-
-    if (isDataQuery(userText)) {
-      // 🔹 DATA QUESTION → NLQ ENGINE
-      res = await axios.post(
-  `${API_BASE}/api/nlq/ask`,
-  {
-    question: userText,
+  sendMessage({
+    text: userText,
     source: selectedSource,
-    dataset: selectedDataset
-  }
-);
+    dataset: selectedDataset,
+    isDataQuery: isDataQuery(userText),
+  });
 
-
-      setMsg(prev => [
-        ...prev,
-        { text: res.data.answer, sender: 'bot' }
-      ]);
-
-    } else {
-      // 🔹 NORMAL CHAT → AI CHATBOT
-      res = await axios.post(
-        `${API_BASE}/api/chatbot/message`,
-        {
-          text: userText,
-          sessionId: sessionId
-        }
-      );
-
-      setMsg(prev => [
-        ...prev,
-        { text: res.data.botMsg, sender: 'bot' }
-      ]);
-    }
-
-  } catch (error) {
-    console.error("Error:", error);
-    setMsg(prev => [
-      ...prev,
-      { text: "Something went wrong. Please try again.", sender: 'bot' }
-    ]);
-  } finally {
-    setLoading(false);
-  }
+  setInput("");
 };
 
     const handleKeyPress = (e) => {
@@ -268,7 +279,7 @@ const handleCSVUpload = async (file) => {
         {/* Chat area */}
         <main className="flex-1 overflow-y-auto pt-20 pb-24 flex items-center justify-center">
         <div className="w-full max-w-4xl mx-auto px-4 flex flex-col space-y-3">
-          {msg.length === 0 ? (
+          {messages.length === 0 ? (
             //  welcome message
             <div className="text-center text-gray-400 text-lg">
               Hi, I'm{" "}
@@ -276,7 +287,7 @@ const handleCSVUpload = async (file) => {
             </div>
           ) : (
             <>
-              {msg.map((mesg, idx) => (
+              {messages.map((mesg, idx) => (
                 <div
                   key={idx}
                   className={`px-4 py-2 rounded-xl max-w-[75%] ${

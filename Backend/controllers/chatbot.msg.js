@@ -23,39 +23,8 @@ function isDataQuestion(text) {
 
 export const Message = async (req, res) => {
   try {
-    const { text, sessionId = "default" } = req.body;
+    const { text } = req.body;
 
-    if (!text || !text.trim()) {
-      return res.status(400).json({ botMsg: "Message cannot be empty." });
-    }
-
-    /* =======================
-       1️⃣ DATA QUESTION → NLQ
-       ======================= */
-    if (isDataQuestion(text)) {
-      try {
-        const nlqResponse = await axios.post(
-          `${process.env.NLQ_ENGINE_URL}/api/nlq/ask`,
-          {
-            question: text,
-            source: "mongo"
-          }
-        );
-
-        return res.json({
-          botMsg: nlqResponse.data.answer,
-          data: nlqResponse.data.data || []
-        });
-
-      } catch (nlqError) {
-        console.error("NLQ failed, falling back to AI:", nlqError.message);
-        // fall through to AI chat
-      }
-    }
-
-    /* =======================
-       2️⃣ NORMAL CHAT (AI)
-       ======================= */
     const chatCompletion = await groq.chat.completions.create({
       model: "llama-3.1-8b-instant",
       messages: [
@@ -65,19 +34,13 @@ export const Message = async (req, res) => {
       temperature: 0.7
     });
 
-    const botresponse =
-      chatCompletion.choices[0]?.message?.content ||
-      "I didn't understand that.";
-
     return res.json({
-      botMsg: botresponse
+      botMsg: chatCompletion.choices[0]?.message?.content
     });
 
   } catch (error) {
     console.error("Chatbot error:", error);
-    return res.status(500).json({
-      botMsg: "Something went wrong. Please try again."
-    });
+    res.status(500).json({ botMsg: "AI error" });
   }
 };
 

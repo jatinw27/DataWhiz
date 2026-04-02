@@ -7,6 +7,9 @@ import { toNaturalLanguage } from "./response.service.js";
 import { datasetManager, dataSourceManager } from "../core/managers.js";
 import { buildMongoQuery } from "./mongo-query.builder.js";
 import { aiGenerateQuery } from "./ai-structured.service.js";
+import { detectChart } from "../utils/chartDetector.js";
+import { generateInsights } from "../utils/insightGenerator.js";
+import { exploreDataset } from "../utils/datasetExplorer.js";
 
 export async function handleNLQ(req, res) {
   const { question, text, source = "sqlite", dataset } = req.body;
@@ -31,7 +34,18 @@ export async function handleNLQ(req, res) {
   if (!dataSource) {
     return res.json({ answer: "Invalid data source selected." });
   }
+  
+// 🔍 Dataset exploration questions
+const exploration = exploreDataset(dataSource, finalQuestion);
 
+if (exploration) {
+  return res.json({
+    question: finalQuestion,
+    answer: exploration.answer,
+    data: exploration.data,
+    source: "explorer"
+  });
+}
   // 1️⃣ Read schema
   const schema = await dataSource.getSchema();
 
@@ -97,11 +111,21 @@ export async function handleNLQ(req, res) {
     resultRows = await dataSource.runQuery(sql);
   }
 
-  return res.json({
-    question: finalQuestion,
-    generatedQuery,
-    answer: toNaturalLanguage(resultRows),
-    data: resultRows,
-    source
-  });
+const chart = detectChart(resultRows);
+const insights = generateInsights(resultRows);
+
+const answer =
+  insights ||
+  toNaturalLanguage(resultRows);
+
+return res.json({
+  question: finalQuestion,
+  generatedQuery,
+  answer,
+  insights,
+  data: resultRows,
+  chart,
+  source
+});
+
 }

@@ -1,25 +1,26 @@
 export function toNaturalLanguage(rows) {
-  if (!rows || rows.length === 0) {
-    return "No results found.";
+  if (!rows || rows.length === 0) return "No data found.";
+
+  const row = rows[0];
+
+  // ✅ Handle COUNT(*) edge cases
+  if (row.count !== undefined) {
+    return `There are ${row.count} records.`;
   }
 
-  // 🔢 COUNT queries
-  if (rows.length === 1 && rows[0].count !== undefined) {
-    return `There are ${rows[0].count} records.`;
+  if (row["count(*)"] !== undefined) {
+    return `There are ${row["count(*)"]} records.`;
   }
 
-  // 📊 AGGREGATION queries
-  if (rows.length === 1 && rows[0].value !== undefined) {
-    return `The result is ${rows[0].value}.`;
+  if (row.value !== undefined) {
+    return `The result is ${row.value}.`;
   }
 
-  // 🧾 GENERIC RECORD LIST
   return rows
-    .slice(0, 10) // prevent huge replies
-    .map(row => {
-      return Object.entries(row)
-        .map(([key, value]) => `${key}: ${value}`)
-        .join(", ");
-    })
-    .join(". ") + ".";
+    .map(r =>
+      Object.entries(r)
+        .map(([k, v]) => `${k}: ${v}`)
+        .join(", ")
+    )
+    .join(". ");
 }

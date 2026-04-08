@@ -1,36 +1,87 @@
 export async function generateDashboard(dataSource) {
+  console.log("🔥 NEW DASHBOARD LOGIC RUNNING");
 
   const stats = await dataSource.getColumnStats();
   const insights = await dataSource.getInsights();
 
   const charts = [];
 
-  Object.entries(stats).forEach(([col, info]) => {
+  // ✅ SMART FILTER
+  insights
+    .filter(i => {
+      const col = i.column.toLowerCase();
+      const meta = stats[i.column];
 
-    // categorical column -> bar chart
-    if (info.type === "string" && info.uniqueCount < 15) {
+      return (
+        i.type === "topValues" &&
+        meta.type === "string" &&
+        meta.uniqueCount <= 50 &&
+        !col.includes("id") &&
+        !col.includes("email") &&
+        !col.includes("phone") &&
+        !col.includes("website")
+      );
+    })
+    .slice(0, 3)
+    .forEach(i => {
       charts.push({
-        type: "bar",
-        x: col,
-        y: "count"
+        type: "topValues",
+        column: i.column,
+        values: i.values.map(([name, count]) => ({
+          name,
+          count
+        }))
+      });
+    });
+
+  // ✅ FALLBACK (STRONG)
+  if (charts.length === 0) {
+    const fallback = insights.find(i => {
+      const col = i.column.toLowerCase();
+      return (
+        i.type === "topValues" &&
+        !col.includes("id") &&
+        !col.includes("email") &&
+        !col.includes("phone")
+      );
+    });
+
+    if (fallback) {
+      charts.push({
+        type: "topValues",
+        column: fallback.column,
+        values: fallback.values.map(([name, count]) => ({
+          name,
+          count
+        }))
       });
     }
+  }
 
-    // numeric column -> histogram
-    if (info.type === "number") {
-      charts.push({
-        type: "histogram",
-        x: col,
-        y: col
-      });
-    }
+  // ✅ NUMERIC CHART (RELAXED)
+  const numericCol = Object.entries(stats).find(
+    ([col, meta]) =>
+      meta.type === "number" &&
+      meta.uniqueCount > 5 &&
+      col !== "Index"
+  );
 
-  });
+  if (numericCol) {
+    charts.push({
+      type: "histogram",
+      x: numericCol[0],
+      y: numericCol[0]
+    });
+  }
+
+  const sampleData = (await dataSource.runQuery({}))?.slice(0, 100);
+
+  console.log("FINAL CHARTS:", charts.length);
 
   return {
     stats,
     insights,
-    charts
+    charts,
+    data: sampleData
   };
 }
-

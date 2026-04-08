@@ -1,23 +1,28 @@
-import express from "express";
-import { datasetManager } from "../core/managers.js";
-import { generateDashboard } from "../utils/dashboardGenerator.js";
+  import express from "express";
+  import { datasetManager } from "../core/managers.js";
+  import { generateDashboard } from "../utils/dashboardGenerator.js";
 
-const router = express.Router();
+  const router = express.Router();
 
-router.get("/:dataset", async (req, res) => {
+  router.get("/:dataset", async (req, res) => {
 
-  const { dataset } = req.params;
+    const { dataset } = req.params;
 
-  const ds = datasetManager.get(dataset);
+    // console.log("Requested dataset:", dataset);
 
-  if (!ds) {
-    return res.status(404).json({ error: "Dataset not found" });
-  }
+    const ds = datasetManager.get(dataset);
 
-  const dashboard = await generateDashboard(ds);
+    // console.log("Found dataset:", ds);
 
-  res.json(dashboard);
+    
 
-});
+    if (!ds) {
+      return res.status(404).json({ error: "Dataset not found" });
+    }
 
-export default router;
+    const dashboard = await generateDashboard(ds);
+
+    res.json(dashboard);
+  });
+
+  export default router;

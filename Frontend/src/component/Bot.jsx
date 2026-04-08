@@ -18,7 +18,7 @@ function Bot() {
     return localStorage.getItem("myChatSession") || "user_" + Date.now();
 });
     
-console.log("API BASE =", import.meta.env.VITE_API_BASE_URL);
+// console.log("API BASE =", import.meta.env.VITE_API_BASE_URL);
 
 
 //     useEffect(() => {

@@ -10,8 +10,10 @@ const {name} = useParams();
 
   useEffect(() => {
 
-    api.get(`/api/dashboard/${name}`)
-      .then(res => setDashboard(res.data));
+    api.get(`/dashboard/${name}`)
+      .then(res => {
+        // console.log("api response: ", res.data)
+        setDashboard(res.data)});
 
   }, [name]);
 
@@ -20,6 +22,7 @@ const {name} = useParams();
   }
 
   return (
+    
     <div className="p-10">
 
       <h1 className="text-2xl font-bold mb-6">
@@ -27,37 +30,41 @@ const {name} = useParams();
       </h1>
 
       {/* INSIGHTS */}
-      <div className="mb-10">
-        <h2 className="text-xl font-semibold mb-4">
-          Insights
-        </h2>
+      <div className="bg-white p-4 rounded-xl shadow">
+  <h2 className="text-lg font-semibold mb-3">Smart Insights</h2>
 
-        {dashboard.insights?.map((i, idx) => (
-         <p
-  key={idx}
-  className="bg-gray-100 dark:bg-[#1a1a1a] p-3 rounded-lg"
->
-  💡 {i.text}
-</p>
-        ))}
-      </div>
+  {dashboard.insights?.slice(0, 6).map((i, idx) => (
+  <p key={idx} className="text-sm">
+    🔹 {i.type === "topValues"
+      ? `Most common in ${i.column}: ${i.values?.[0]?.[0]}`
+      : `${i.count} missing values in ${i.column}`}
+  </p>
+))}
+</div>
 
       {/* CHARTS */}
+
       <div>
+
         <h2 className="text-xl font-semibold mb-4">
           Charts
         </h2>
-
-        {dashboard.charts?.map((chart, idx) => (
-          <div key={idx} className="mb-8">
-            <DataChart
-              data={dashboard.sampleData}
-              chart={chart}
-            />
-          </div>
-        ))}
+<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+  {dashboard.charts?.map((chart, idx) => (
+    <div
+      key={idx}
+      className="bg-white p-4 rounded-xl shadow"
+    >
+      
+      <DataChart data={dashboard.data} chart={chart} />
+    </div>
+  ))}
+</div>
       </div>
 
     </div>
+
+
   );
+
 }

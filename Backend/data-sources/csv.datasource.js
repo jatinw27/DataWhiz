@@ -189,4 +189,9 @@ async getInsights() {
   getType() {
     return "csv";
   }
+  async getData() {
+  await this.loadFile();
+  return this.rows;
 }
+}
+

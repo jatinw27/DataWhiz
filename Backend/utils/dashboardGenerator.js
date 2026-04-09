@@ -1,3 +1,4 @@
+import { generateAutoAnalysis } from "./autoAnalysis.js";
 export async function generateDashboard(dataSource) {
   console.log("🔥 NEW DASHBOARD LOGIC RUNNING");
 
@@ -76,12 +77,13 @@ export async function generateDashboard(dataSource) {
 
   const sampleData = (await dataSource.runQuery({}))?.slice(0, 100);
 
-  console.log("FINAL CHARTS:", charts.length);
-
+  // console.log("FINAL CHARTS:", charts.length);
+const summary = await generateAutoAnalysis(dataSource);
   return {
     stats,
     insights,
     charts,
-    data: sampleData
+    data: sampleData,
+    summary
   };
 }

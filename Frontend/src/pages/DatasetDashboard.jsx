@@ -28,16 +28,55 @@ const {name} = useParams();
       <h1 className="text-2xl font-bold mb-6">
         Dataset Dashboard
       </h1>
+<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+
+  <div className="bg-white p-4 rounded-xl shadow">
+    <p className="text-sm text-gray-500">Rows</p>
+    <h2 className="text-xl font-bold">{dashboard.data?.length}</h2>
+  </div>
+
+  <div className="bg-white p-4 rounded-xl shadow">
+    <p className="text-sm text-gray-500">Columns</p>
+    <h2 className="text-xl font-bold">
+      {Object.keys(dashboard.stats || {}).length}
+    </h2>
+  </div>
+
+  <div className="bg-white p-4 rounded-xl shadow">
+    <p className="text-sm text-gray-500">Insights</p>
+    <h2 className="text-xl font-bold">
+      {dashboard.insights?.length}
+    </h2>
+  </div>
+
+  <div className="bg-white p-4 rounded-xl shadow">
+    <p className="text-sm text-gray-500">Charts</p>
+    <h2 className="text-xl font-bold">
+      {dashboard.charts?.length}
+    </h2>
+  </div>
+
+</div>
+<div className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white p-5 rounded-xl shadow mb-6">
+  <h2 className="text-lg font-semibold mb-2">
+    🧠 AI Summary
+  </h2>
+
+  {dashboard.summary?.map((line, idx) => (
+    <p key={idx} className="text-sm mb-1">
+      {line}
+    </p>
+  ))}
+</div>
 
       {/* INSIGHTS */}
       <div className="bg-white p-4 rounded-xl shadow">
   <h2 className="text-lg font-semibold mb-3">Smart Insights</h2>
 
   {dashboard.insights?.slice(0, 6).map((i, idx) => (
-  <p key={idx} className="text-sm">
-    🔹 {i.type === "topValues"
-      ? `Most common in ${i.column}: ${i.values?.[0]?.[0]}`
-      : `${i.count} missing values in ${i.column}`}
+  <p key={idx} className="text-sm flex items-center gap-2">
+    📊 <span className="font-medium">{i.column}:</span>{" "}
+    {i.values?.[0]?.[0]}
   </p>
 ))}
 </div>

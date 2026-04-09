@@ -68,6 +68,16 @@ const {name} = useParams();
     </p>
   ))}
 </div>
+{dashboard.aiSummary && (
+  <div className="bg-black text-white p-5 rounded-xl shadow mb-6">
+    <h2 className="text-lg font-semibold mb-2">
+      🤖 AI Analysis
+    </h2>
+    <p className="text-sm whitespace-pre-line">
+      {dashboard.aiSummary}
+    </p>
+  </div>
+)}
 
       {/* INSIGHTS */}
       <div className="bg-white p-4 rounded-xl shadow">

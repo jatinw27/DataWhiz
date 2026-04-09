@@ -1,4 +1,5 @@
 import { generateAutoAnalysis } from "./autoAnalysis.js";
+import { generateAISummary } from "./aiSummary.js";
 export async function generateDashboard(dataSource) {
   console.log("🔥 NEW DASHBOARD LOGIC RUNNING");
 
@@ -76,7 +77,13 @@ export async function generateDashboard(dataSource) {
   }
 
   const sampleData = (await dataSource.runQuery({}))?.slice(0, 100);
+let aiSummary = null;
 
+try {
+  aiSummary = await generateAISummary(dataSource);
+} catch (err) {
+  console.log("AI failed, fallback used");
+}
   // console.log("FINAL CHARTS:", charts.length);
 const summary = await generateAutoAnalysis(dataSource);
   return {
@@ -85,5 +92,6 @@ const summary = await generateAutoAnalysis(dataSource);
     charts,
     data: sampleData,
     summary
+    aiSummary
   };
 }

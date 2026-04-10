@@ -91,7 +91,7 @@ const summary = await generateAutoAnalysis(dataSource);
     insights,
     charts,
     data: sampleData,
-    summary
-    aiSummary
+    summary,
+    aiSummary,
   };
 }

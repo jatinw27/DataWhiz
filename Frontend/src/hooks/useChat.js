@@ -266,20 +266,24 @@ This dataset appears suitable for customer analysis, reporting, and trend explor
 
       /* ===== STREAM EFFECT ===== */
       let i = 0;
-      const interval = setInterval(() => {
-        i++;
-        setSessions((prev) => {
-          const session = prev[activeSessionId];
-          const msgs = [...session.messages];
-          msgs[msgs.length - 1].text = fullText.slice(0, i);
-          return {
-            ...prev,
-            [activeSessionId]: { ...session, messages: msgs },
-          };
-        });
 
-        if (i >= fullText.length) clearInterval(interval);
-      }, 15);
+const interval = setInterval(() => {
+  i += Math.floor(Math.random() * 3) + 1; // 🔥 variable speed
+
+  setSessions((prev) => {
+    const session = prev[activeSessionId];
+    const msgs = [...session.messages];
+
+    msgs[msgs.length - 1].text = fullText.slice(0, i);
+
+    return {
+      ...prev,
+      [activeSessionId]: { ...session, messages: msgs },
+    };
+  });
+
+  if (i >= fullText.length) clearInterval(interval);
+}, 20);
     } catch (err) {
       setSessions((prev) => {
         const session = prev[activeSessionId];

@@ -308,7 +308,12 @@ const askQuestion = async (msg) => {
               ))} 
                 {loading && (
                 <div className="bg-gray-700 text-gray-300 px-4 py-2 rounded-xl max-w-[60%] self-start">
-                  DataWhiz is thinking...
+                  <div className="flex gap-1">
+  <span>Thinking</span>
+  <span className="animate-bounce">.</span>
+  <span className="animate-bounce delay-100">.</span>
+  <span className="animate-bounce delay-200">.</span>
+</div>
                 </div>
               )}
            

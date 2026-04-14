@@ -9,6 +9,7 @@ const openai = new OpenAI({
 });
 
 router.post("/", async (req, res) => {
+    console.log("NLQ Route")
   const { question, dataset } = req.body;
 
   const ds = datasetManager.get(dataset);
@@ -19,16 +20,19 @@ router.post("/", async (req, res) => {
 
   const schema = await ds.getSchema();
 
-  // 🔥 AI converts question → query
   const prompt = `
 You are a data assistant.
 
 Dataset schema:
 ${JSON.stringify(schema)}
 
-Convert the user question into a JSON query.
+STRICT RULES:
+- If user mentions columns → include them
+- If user says "only" → return ONLY those columns
+- Use exact column names from schema
 
-Format:
+Return ONLY valid JSON (no explanation):
+
 {
   "columns": [],
   "condition": "",
@@ -39,29 +43,62 @@ User question:
 "${question}"
 `;
 
-  const aiRes = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
-    messages: [
-      { role: "system", content: "Convert questions to structured queries." },
-      { role: "user", content: prompt }
-    ]
-  });
-
-  let query;
+  let query = { columns: [] };
 
   try {
-    query = JSON.parse(aiRes.choices[0].message.content);
-  } catch {
-    return res.json({
-      answer: "Sorry, I couldn't understand the query.",
-      data: []
+    const aiRes = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      messages: [
+        { role: "system", content: "Convert questions to structured queries." },
+        { role: "user", content: prompt }
+      ]
     });
+
+    query = JSON.parse(aiRes.choices[0].message.content);
+
+  } catch (err) {
+    console.log("⚠️ AI failed, using fallback:", err.message);
+  }
+
+  //  FALLBACK LOGIC (IMPORTANT)
+ const lowerQ = question.toLowerCase();
+
+// 🔥 SMART COLUMN DETECTION
+let detectedColumns = Object.keys(schema).filter(col =>
+  lowerQ.includes(col.toLowerCase())
+);
+
+// 🔥 HANDLE "first name" / "last name"
+if (lowerQ.includes("first name")) {
+  detectedColumns = ["First Name"];
+}
+if (lowerQ.includes("last name")) {
+  detectedColumns = ["Last Name"];
+}
+
+// ✅ APPLY RESULT
+if (detectedColumns.length > 0) {
+  query.columns = detectedColumns;
+} else {
+  query.columns = Object.keys(schema);
+}
+
+  if (!query.columns || query.columns.length === 0) {
+    query.columns = Object.keys(schema).filter(col =>
+      lowerQ.includes(col.toLowerCase())
+    );
+  }
+
+  if (!query.columns || query.columns.length === 0) {
+    query.columns = Object.keys(schema);
   }
 
   const data = await ds.runQuery(query);
 
   res.json({
-    query,
+    answer: data.length
+      ? `Found ${data.length} results.`
+      : "No matching records found.",
     data
   });
 });

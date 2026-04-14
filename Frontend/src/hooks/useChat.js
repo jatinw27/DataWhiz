@@ -201,9 +201,9 @@ This dataset appears suitable for customer analysis, reporting, and trend explor
         }
         // ✅ NORMAL DATA QUESTION
         else {
-         res = await api.post("/nlq", {
+         res = await askNLQ({
   question: text,
-  dataset: dataset
+  dataset
 });
         }
       }
@@ -282,23 +282,41 @@ const interval = setInterval(() => {
     };
   });
 
-  if (i >= fullText.length) clearInterval(interval);
+  if (i >= fullText.length) {
+  clearInterval(interval);
+  setLoading(false); 
+}
 }, 20);
     } catch (err) {
-      setSessions((prev) => {
-        const session = prev[activeSessionId];
-        const msgs = [...session.messages];
-        msgs[msgs.length - 1].status = "error";
-        return {
-          ...prev,
-          [activeSessionId]: { ...session, messages: msgs },
-        };
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  console.error("❌ CHAT ERROR:", err);
 
+  setSessions((prev) => {
+    const session = prev[activeSessionId];
+    const msgs = [...session.messages];
+
+    msgs[msgs.length - 1] = {
+      ...msgs[msgs.length - 1],
+      status: "sent"
+    };
+
+    return {
+      ...prev,
+      [activeSessionId]: {
+        ...session,
+        messages: [
+          ...msgs,
+          {
+            text: "Something went wrong. Please try again.",
+            sender: "bot",
+            time: getTime(),
+          },
+        ],
+      },
+    };
+  });
+  setLoading(false);
+}
+  }
   /* =========================
      EXPORT
   ========================= */

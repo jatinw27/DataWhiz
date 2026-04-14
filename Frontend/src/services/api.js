@@ -49,7 +49,7 @@ export const uploadCSV = (formData) =>
    CHAT / NLQ
 ========================= */
 export const askNLQ = (payload) =>
-  api.post("/nlq/ask", payload);
+  api.post("/nlq", payload);
 
 export const sendChatMessage = (payload) =>
   api.post("/chatbot/message", payload);

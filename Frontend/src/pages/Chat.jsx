@@ -20,6 +20,7 @@ export default function Chat() {
   const [selectedSource, setSelectedSource] = useState("csv");
   const [chatMode, setChatMode] = useState("data");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [showInsights, setShowInsights] = useState(false);
 
   return (
    <div className="flex h-screen bg-gray-100 dark:bg-[#0f0f0f] text-gray-900 dark:text-white overflow-hidden">
@@ -62,7 +63,7 @@ export default function Chat() {
 
 
         {/* MODE SWITCH */}
-        <div className="px-8 pt-6 flex gap-4">
+        <div className="px-8 pt-3 pb-2 flex gap-3">
           <button
             onClick={() => setChatMode("data")}
             className={`px-5 py-2 rounded-lg text-sm font-medium transition ${
@@ -88,40 +89,59 @@ export default function Chat() {
 
         {/* DATA SOURCE */}
         {chatMode === "data" && (
-          <div className="px-8">
-            <DatasetSelector
-              selectedSource={selectedSource}
-              setSelectedSource={setSelectedSource}
-              selectedDataset={datasets.selectedDataset}
-              setSelectedDataset={datasets.setSelectedDataset}
-              datasets={datasets.datasets}
-              addDataset={datasets.addDataset}
-              setMongoUri={datasets.setMongoUri}
-              setSqliteFile={datasets.setSqliteFile}
-            />
+  <div className="px-6 py-2 border-b border-gray-800 flex items-center justify-between">
 
-            {/* DATASET DASHBOARD LINK */}
-    {datasets.selectedDataset && (
-      <div className="mt-3 text-sm">
-        <Link
-          to={`/dataset/${datasets.selectedDataset}`}
-          className="text-green-600 hover:underline font-medium"
-        >
-          📈 View Dataset Dashboard
-        </Link>
-      </div>
-    )}
-{/* 🔥 AUTO AI DATASET INSIGHTS */}
-    {datasets.selectedDataset && (
-      <div className="mt-6">
-        <DatasetInsights dataset={datasets.selectedDataset} />
-      </div>
-    )}
-          </div>
-        )}
+  {/* LEFT SIDE (controls) */}
+  <div className="flex items-center gap-3">
+
+    <DatasetSelector
+      compact // 👈 add this prop (we'll adjust style)
+      selectedSource={selectedSource}
+      setSelectedSource={setSelectedSource}
+      selectedDataset={datasets.selectedDataset}
+      setSelectedDataset={datasets.setSelectedDataset}
+      datasets={datasets.datasets}
+      addDataset={datasets.addDataset}
+      setMongoUri={datasets.setMongoUri}
+      setSqliteFile={datasets.setSqliteFile}
+    />
+
+  </div>
+
+  {/* RIGHT SIDE (actions) */}
+  {datasets.selectedDataset && (
+    <div className="flex items-center gap-4 text-sm">
+
+      <Link
+        to={`/dataset/${datasets.selectedDataset}`}
+        className="text-green-400 hover:text-green-300 transition"
+      >
+        📊 Dashboard
+      </Link>
+
+      <button
+        onClick={() => setShowInsights(prev => !prev)}
+        className="text-gray-400 hover:text-white transition"
+      >
+        {showInsights ? "Hide Insights" : "Insights"}
+      </button>
+
+    </div>
+  )}
+
+</div>
+)}
+         
+
+
+{showInsights && (
+  <div className="px-8">
+    <DatasetInsights dataset={datasets.selectedDataset} />
+  </div>
+)}
 
         {/* CHAT */}
-        <div className="flex-1 overflow-y-auto px-8 pt-6 pb-32 max-w-4xl w-full mx-auto">
+        <div className="flex-1 overflow-y-auto px-6 py-4 max-w-5xl w-full mx-auto">
           <ChatWindow 
   messages={chat.messages}
   loading={chat.loading}

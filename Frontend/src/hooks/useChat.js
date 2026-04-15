@@ -9,6 +9,10 @@ import { detectChart } from "../../../Backend/utils/chartDetector.js";
    SIMPLE ENGLISH EXPLANATION
 ========================= */
 function getSimpleEnglishAnswer(question, data, dataset) {
+
+  if (!dataset) {
+  throw new Error("No dataset selected");
+}
   if (!Array.isArray(data) || data.length === 0) return null;
 
   // COUNT

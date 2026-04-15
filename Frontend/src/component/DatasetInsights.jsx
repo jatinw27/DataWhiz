@@ -7,7 +7,6 @@ export default function DatasetInsights({ insights }) {
       </div>
     );
   }
-console.log("CHARTS:", dashboard.charts);
   return (
         
     

@@ -50,7 +50,9 @@ schema[col.name].push("_id");
     if (aggregation) {
       return db.collection(collection).aggregate(aggregation).toArray();
     }
-
+if (query.limit) {
+  result = result.slice(0, query.limit);
+}
     return db.collection(collection).find(filter, { projection }).toArray();
   }
 

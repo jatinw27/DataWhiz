@@ -93,7 +93,31 @@ export class CSVDataSource extends BaseDataSource {
         return filtered;
       });
     }
+    
+if (query.limit) {
+  result = result.slice(0, query.limit);
+}
+// 🔥 GROUP + COUNT
+if (query.groupBy && query.aggregation === "count") {
+  const grouped = {};
 
+  result.forEach(row => {
+    const key = row[query.groupBy];
+    grouped[key] = (grouped[key] || 0) + 1;
+  });
+
+  result = Object.entries(grouped).map(([key, count]) => ({
+    [query.groupBy]: key,
+    count
+  }));
+
+  // 🔥 SORT DESC
+  result.sort((a, b) => b.count - a.count);
+}
+
+if (query.limit) {
+  result = result.slice(0, query.limit);
+}
     return result;
   }
 

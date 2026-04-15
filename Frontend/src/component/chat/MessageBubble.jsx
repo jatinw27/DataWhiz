@@ -26,35 +26,33 @@ export default function MessageBubble({
         ${isGrouped ? "mt-1" : "mt-4"}
       `}
     >
+
       {/* TEXT */}
-      <div className="text-sm leading-relaxed whitespace-pre-wrap">
-        {text}
-      </div>
+      {text && (
+        <div className="text-sm whitespace-pre-wrap leading-relaxed">
+          {text}
+        </div>
+      )}
 
       {/* DATA TABLE */}
       {Array.isArray(data) && data.length > 0 && (
-        <div className="mt-4 overflow-x-auto rounded-lg border border-gray-700">
-          <table className="text-sm w-full border-collapse">
-            <thead className="bg-black/40">
+        <div className="mt-4 bg-[#111] rounded-xl border border-gray-800 overflow-hidden">
+          <table className="text-sm w-full">
+            <thead className="bg-gray-900">
               <tr>
                 {Object.keys(data[0]).map((key) => (
-                  <th
-                    key={key}
-                    className="px-3 py-2 text-left border-b border-gray-700"
-                  >
+                  <th key={key} className="px-3 py-2 text-left text-gray-400">
                     {key}
                   </th>
                 ))}
               </tr>
             </thead>
+
             <tbody>
               {data.map((row, i) => (
-                <tr key={i} className="odd:bg-black/20">
+                <tr key={i} className="border-t border-gray-800">
                   {Object.values(row).map((val, j) => (
-                    <td
-                      key={j}
-                      className="px-3 py-2 border-b border-gray-800"
-                    >
+                    <td key={j} className="px-3 py-2">
                       {String(val)}
                     </td>
                   ))}
@@ -66,14 +64,14 @@ export default function MessageBubble({
       )}
 
       {/* CHART */}
-{chart && data && (
-  <div className="mt-4">
-    <DataChart data={data} chart={chart} />
-  </div>
-)}
+      {chart && data && (
+        <div className="mt-4">
+          <DataChart data={data} chart={chart} />
+        </div>
+      )}
 
-      {/* STATUS (only for user messages) */}
-      {sender === "user" && (
+      {/* STATUS */}
+      {isUser && (
         <div className="text-[10px] text-right mt-2 text-gray-300">
           {status === "sending" && "Sending…"}
           {status === "sent" && "Sent"}

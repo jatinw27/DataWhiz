@@ -118,19 +118,27 @@ if (query.groupBy && query.aggregation === "count") {
 if (query.limit) {
   result = result.slice(0, query.limit);
 }
+
 // =========================
-//  APPLY SORTING
+// 🔥 SORTING
 // =========================
 if (query.sortBy) {
-  data.sort((a, b) => {
-    if (a[query.sortBy] < b[query.sortBy]) return -1;
-    if (a[query.sortBy] > b[query.sortBy]) return 1;
-    return 0;
-  });
+  result.sort((a, b) => {
+    const valA = a[query.sortBy];
+    const valB = b[query.sortBy];
 
-  if (query.sortOrder === "desc") {
-    data.reverse();
-  }
+    // handle strings safely
+    if (typeof valA === "string") {
+      return query.sortOrder === "asc"
+        ? valA.localeCompare(valB)
+        : valB.localeCompare(valA);
+    }
+
+    // numbers
+    return query.sortOrder === "asc"
+      ? valA - valB
+      : valB - valA;
+  });
 }
     return result;
   }

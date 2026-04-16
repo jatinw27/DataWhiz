@@ -42,37 +42,48 @@ export function parseQuestion(question, schema) {
   });
 
   // =========================
-  // 🔥 LIMIT DETECTION
+  //  LIMIT DETECTION
   // =========================
-  const topMatch = lowerQ.match(/top\s*(\d+)/);
-  if (topMatch) {
-    query.limit = parseInt(topMatch[1]);
-  }
+ const topMatch = lowerQ.match(/top\s*(\d+)/);
+if (topMatch) {
+  query.limit = parseInt(topMatch[1]);
+}
 
-  if (/first|top\s*1|one/.test(lowerQ)) {
-    query.limit = 1;
-  }
+if (
+  !query.limit &&
+  (lowerQ.includes("first ") || lowerQ === "first") &&
+  !lowerQ.includes("first name")
+) {
+  query.limit = 1;
+}
 
-  // =========================
-//  SORT DETECTION
+// =========================
+//  SORT DETECTION (SMART)
 // =========================
 query.sortBy = null;
-query.sortOrder = "desc";
+query.sortOrder = "asc"; // default
 
 const sortMatch = lowerQ.match(/by\s+([a-zA-Z ]+)/);
 
 if (sortMatch) {
-  const field = sortMatch[1].trim();
+  let field = sortMatch[1].trim();
 
-  const matchedCol = columns.find(col =>
-    col.toLowerCase() === field.toLowerCase()
-  );
+  // remove extra words like "desc", "ascending"
+  field = field.replace(/desc|descending|asc|ascending/g, "").trim();
+
+  // match with schema OR synonyms
+  const matchedCol =
+    columns.find(col => col.toLowerCase() === field.toLowerCase()) ||
+    synonyms[field];
 
   if (matchedCol) {
     query.sortBy = matchedCol;
   }
-}
 
+  if (lowerQ.includes("desc")) {
+    query.sortOrder = "desc";
+  }
+}
   // =========================
   //  SPECIAL CASE: TOP CUSTOMERS
   // =========================
@@ -82,14 +93,17 @@ if (sortMatch) {
     // show meaningful columns instead of just ID
     query.columns = ["Customer Id", "First Name", "Country"];
 
-    return query;
+    
   }
 
   // =========================
   // 🔥 GROUPING LOGIC
   // =========================
-  if (lowerQ.includes("top") || lowerQ.includes("most")) {
-    if (query.columns.length === 1) {
+  if (
+  (lowerQ.includes("top") || lowerQ.includes("most")) &&
+  query.columns.length === 1 &&
+  !query.sortBy // 🔥 IMPORTANT
+) {
       const col = query.columns[0];
       const meta = schema[col];
 
@@ -102,7 +116,7 @@ if (sortMatch) {
         query.limit = query.limit || 5;
       }
     }
-  }
+  
 
   // =========================
   // 🔹 COUNT

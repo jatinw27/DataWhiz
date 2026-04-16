@@ -118,10 +118,24 @@ if (query.groupBy && query.aggregation === "count") {
 if (query.limit) {
   result = result.slice(0, query.limit);
 }
+// =========================
+//  APPLY SORTING
+// =========================
+if (query.sortBy) {
+  data.sort((a, b) => {
+    if (a[query.sortBy] < b[query.sortBy]) return -1;
+    if (a[query.sortBy] > b[query.sortBy]) return 1;
+    return 0;
+  });
+
+  if (query.sortOrder === "desc") {
+    data.reverse();
+  }
+}
     return result;
   }
 
-  // ✅ THIS FIXES YOUR PROBLEM
+  
  async getRowCount() {
   await this.loadFile();
   return this.rows.length;

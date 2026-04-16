@@ -54,7 +54,27 @@ export function parseQuestion(question, schema) {
   }
 
   // =========================
-  // 🔥 SPECIAL CASE: TOP CUSTOMERS
+//  SORT DETECTION
+// =========================
+query.sortBy = null;
+query.sortOrder = "desc";
+
+const sortMatch = lowerQ.match(/by\s+([a-zA-Z ]+)/);
+
+if (sortMatch) {
+  const field = sortMatch[1].trim();
+
+  const matchedCol = columns.find(col =>
+    col.toLowerCase() === field.toLowerCase()
+  );
+
+  if (matchedCol) {
+    query.sortBy = matchedCol;
+  }
+}
+
+  // =========================
+  //  SPECIAL CASE: TOP CUSTOMERS
   // =========================
   if (lowerQ.includes("top") && lowerQ.includes("customer")) {
     query.limit = query.limit || 5;

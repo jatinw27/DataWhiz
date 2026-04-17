@@ -11,17 +11,21 @@ export class CSVDataSource extends BaseDataSource {
     this.loaded = false;
   }
 
+  // =========================
+  // LOAD CSV
+  // =========================
   async loadFile() {
     if (this.loaded) return;
 
     return new Promise((resolve, reject) => {
       fs.createReadStream(this.filePath)
         .pipe(csv())
-        .on("data", row => {
+        .on("data", (row) => {
+          // convert numbers
           for (const key in row) {
             if (row[key] !== "" && !isNaN(row[key])) {
-  row[key] = Number(row[key]);
-}
+              row[key] = Number(row[key]);
+            }
           }
           this.rows.push(row);
         })
@@ -33,6 +37,9 @@ export class CSVDataSource extends BaseDataSource {
     });
   }
 
+  // =========================
+  // SCHEMA
+  // =========================
   async getSchema() {
     await this.loadFile();
     if (!this.rows.length) return {};
@@ -42,202 +49,231 @@ export class CSVDataSource extends BaseDataSource {
     };
   }
 
+  // =========================
+  // 🔥 MAIN QUERY ENGINE
+  // =========================
   async runQuery(query) {
     await this.loadFile();
 
-    const { columns, condition, aggregation } = query;
     let result = [...this.rows];
 
+    const {
+      columns,
+      condition,
+      sortBy,
+      sortOrder = "asc",
+      limit,
+      groupBy,
+      aggregation,
+    } = query;
+
+    // =========================
+    // FILTER (WHERE)
+    // =========================
     if (condition) {
-      const [field, operator, value] = condition.split(" ");
-      const numValue = Number(value);
+      try {
+        const match = condition.match(/(.+?)\s*(=|>|<)\s*(.+)/);
 
-      result = result.filter(row => {
-        if (operator === ">") return row[field] > numValue;
-        if (operator === "<") return row[field] < numValue;
-        if (operator === "=") return row[field] === numValue;
-        return true;
-      });
+if (match) {
+  const field = match[1].trim();
+  const operator = match[2];
+  const valueRaw = match[3].trim();
+
+  const value = isNaN(valueRaw)
+    ? valueRaw.toLowerCase()
+    : Number(valueRaw);
+
+  result = result.filter((row) => {
+    let rowValue = row[field];
+
+    if (rowValue === undefined) return false;
+
+    // normalize string
+    if (typeof rowValue === "string") {
+      rowValue = rowValue.toLowerCase();
     }
 
-    if (aggregation && aggregation.toUpperCase().includes("COUNT")) {
-      return [{ count: result.length }];
+    // number compare
+    if (typeof rowValue === "number" && typeof value === "number") {
+      if (operator === ">") return rowValue > value;
+      if (operator === "<") return rowValue < value;
+      if (operator === "=") return rowValue === value;
     }
 
-    if (aggregation) {
-      const match = aggregation.match(/(AVG|MIN|MAX|SUM)\((.+)\)/i);
-      if (match) {
-        const func = match[1].toUpperCase();
-        const field = match[2];
+    // string compare (🔥 FIX)
+   if (operator === "=") {
+  const cleanRow = String(rowValue).toLowerCase().trim();
+  const cleanValue = String(value).toLowerCase().trim();
 
-        const values = result
-          .map(r => r[field])
-          .filter(v => typeof v === "number");
+  return cleanRow === cleanValue || cleanRow.includes(cleanValue);
+}
 
-        let value = null;
-        if (func === "AVG") value = values.length ? values.reduce((a, b) => a + b, 0) / values.length:0;
-        if (func === "MIN") value = Math.min(...values);
-        if (func === "MAX") value = Math.max(...values);
-        if (func === "SUM") value = values.length
-  ? values.reduce((a, b) => a + b, 0)
-  : 0;
-
-        return [{ value }];
+    return false;
+  });
+}
+      } catch (err) {
+        console.log("❌ FILTER ERROR:", err.message);
       }
     }
 
-    if (columns && columns.length) {
-      result = result.map(row => {
+    // =========================
+    // 🔥 GROUPING
+    // =========================
+    if (groupBy && aggregation === "count") {
+      const grouped = {};
+
+      result.forEach((row) => {
+        const key = row[groupBy];
+        grouped[key] = (grouped[key] || 0) + 1;
+      });
+
+      result = Object.entries(grouped).map(([key, count]) => ({
+        [groupBy]: key,
+        count,
+      }));
+
+      // sort grouped results (descending)
+      result.sort((a, b) => b.count - a.count);
+    }
+
+    // =========================
+    // 🔥 SORTING
+    // =========================
+    if (sortBy) {
+      result.sort((a, b) => {
+        const valA = a[sortBy];
+        const valB = b[sortBy];
+
+        // string sorting
+        if (typeof valA === "string") {
+          return sortOrder === "asc"
+            ? valA.localeCompare(valB)
+            : valB.localeCompare(valA);
+        }
+
+        // number sorting
+        return sortOrder === "asc"
+          ? valA - valB
+          : valB - valA;
+      });
+    }
+
+    // =========================
+    // 🔥 LIMIT
+    // =========================
+    if (limit) {
+      result = result.slice(0, limit);
+    }
+
+    // =========================
+    // 🔥 SELECT COLUMNS
+    // =========================
+    if (columns && columns.length > 0) {
+      result = result.map((row) => {
         const filtered = {};
-        columns.forEach(col => (filtered[col] = row[col]));
+        columns.forEach((col) => {
+          filtered[col] = row[col];
+        });
         return filtered;
       });
     }
-    
-if (query.limit) {
-  result = result.slice(0, query.limit);
-}
-// 🔥 GROUP + COUNT
-if (query.groupBy && query.aggregation === "count") {
-  const grouped = {};
 
-  result.forEach(row => {
-    const key = row[query.groupBy];
-    grouped[key] = (grouped[key] || 0) + 1;
-  });
-
-  result = Object.entries(grouped).map(([key, count]) => ({
-    [query.groupBy]: key,
-    count
-  }));
-
-  // 🔥 SORT DESC
-  result.sort((a, b) => b.count - a.count);
-}
-
-if (query.limit) {
-  result = result.slice(0, query.limit);
-}
-
-// =========================
-// 🔥 SORTING
-// =========================
-if (query.sortBy) {
-  result.sort((a, b) => {
-    const valA = a[query.sortBy];
-    const valB = b[query.sortBy];
-
-    // handle strings safely
-    if (typeof valA === "string") {
-      return query.sortOrder === "asc"
-        ? valA.localeCompare(valB)
-        : valB.localeCompare(valA);
-    }
-
-    // numbers
-    return query.sortOrder === "asc"
-      ? valA - valB
-      : valB - valA;
-  });
-}
     return result;
   }
 
-  
- async getRowCount() {
-  await this.loadFile();
-  return this.rows.length;
-}
+  // =========================
+  // EXTRA UTILS
+  // =========================
+  async getRowCount() {
+    await this.loadFile();
+    return this.rows.length;
+  }
 
- async getColumnStats() {
-  await this.loadFile();
+  async getColumnStats() {
+    await this.loadFile();
 
-  const stats = {};
+    const stats = {};
+    if (!this.rows.length) return stats;
 
-  if (!this.rows.length) return stats;
+    const columns = Object.keys(this.rows[0]);
 
-  const columns = Object.keys(this.rows[0]);
+    columns.forEach((col) => {
+      const values = this.rows
+        .map((r) => r[col])
+        .filter((v) => v !== null && v !== "");
 
-  columns.forEach(col => {
-    const values = this.rows.map(r => r[col]).filter(v => v !== null && v !== "");
+      const numeric = values.filter((v) => typeof v === "number");
+      const dates = values.filter((v) => !isNaN(Date.parse(v)));
 
-    const numeric = values.filter(v => typeof v === "number");
-    const dates = values.filter(v => !isNaN(Date.parse(v)));
+      stats[col] = {
+        type:
+          numeric.length === values.length
+            ? "number"
+            : dates.length === values.length
+            ? "date"
+            : "string",
+        uniqueCount: new Set(values).size,
+        sample: values.slice(0, 3),
+      };
+    });
 
-    stats[col] = {
-      type:
-        numeric.length === values.length
-          ? "number"
-          : dates.length === values.length
-          ? "date"
-          : "string",
-      uniqueCount: new Set(values).size,
-      sample: values.slice(0, 3),
-    };
+    return stats;
+  }
 
-    if (dates.length === values.length && dates.length > 0) {
-      const sorted = dates.map(d => new Date(d)).sort((a, b) => a - b);
-      stats[col].min = sorted[0];
-      stats[col].max = sorted[sorted.length - 1];
-    }
-  });
+  async getInsights() {
+    await this.loadFile();
 
-  return stats;
-}
+    const insights = [];
+    if (!this.rows.length) return insights;
 
-async getInsights() {
-  await this.loadFile();
+    const columns = Object.keys(this.rows[0]);
 
-  const insights = [];
+    columns.forEach((col) => {
+      const values = this.rows.map((r) => r[col]);
 
-  if (!this.rows.length) return insights;
+      // missing
+      const missing = values.filter(
+        (v) => v === null || v === ""
+      ).length;
 
-  const columns = Object.keys(this.rows[0]);
+      if (missing > 0) {
+        insights.push({
+          type: "missing",
+          column: col,
+          count: missing,
+        });
+      }
 
-  columns.forEach(col => {
-    const values = this.rows.map(r => r[col]);
-
-    // Missing values
-    const missing = values.filter(v => v === null || v === "").length;
-
-    if (missing > 0) {
-      insights.push({
-        type: "missing",
-        column: col,
-        count: missing
+      // frequency
+      const freq = {};
+      values.forEach((v) => {
+        if (v !== null && v !== "") {
+          freq[v] = (freq[v] || 0) + 1;
+        }
       });
-    }
 
-    // Top values
-    const freq = {};
-    values.forEach(v => {
-      if (v !== null && v !== "") {
-        freq[v] = (freq[v] || 0) + 1;
+      const top = Object.entries(freq)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 3);
+
+      if (top.length > 0) {
+        insights.push({
+          type: "topValues",
+          column: col,
+          values: top,
+        });
       }
     });
 
-    const sorted = Object.entries(freq)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3);
-
-    if (sorted.length > 0) {
-      insights.push({
-        type: "topValues",
-        column: col,
-        values: sorted
-      });
-    }
-  });
-
-  return insights;
-}
+    return insights;
+  }
 
   getType() {
     return "csv";
   }
-  async getData() {
-  await this.loadFile();
-  return this.rows;
-}
-}
 
+  async getData() {
+    await this.loadFile();
+    return this.rows;
+  }
+}

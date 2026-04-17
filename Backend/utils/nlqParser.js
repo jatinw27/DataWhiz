@@ -9,7 +9,8 @@ export function parseQuestion(question, schema) {
     groupBy: null
   };
 
-  const columns = Object.keys(schema);
+  const tableName = Object.keys(schema)[0]
+  const columns = schema[tableName];
 
   // =========================
   // 🔹 COLUMN MATCH
@@ -19,7 +20,7 @@ export function parseQuestion(question, schema) {
   );
 
   // =========================
-  // 🔥 SYNONYMS (NON-DESTRUCTIVE)
+  //  SYNONYMS (NON-DESTRUCTIVE)
   // =========================
   const synonyms = {
     "first name": "First Name",
@@ -40,7 +41,49 @@ export function parseQuestion(question, schema) {
       }
     }
   });
+// =========================
+//  WHERE / FILTER DETECTION
+// =========================
+query.condition = "";
 
+// pattern: "where country = chile"
+const whereMatch = lowerQ.match(/where\s+([a-zA-Z ]+)\s*(=|>|<)\s*([a-zA-Z0-9 ]+)/);
+
+if (whereMatch) {
+  const fieldRaw = whereMatch[1].trim();
+  const operator = whereMatch[2];
+  const value = whereMatch[3].trim();
+
+  const matchedCol =
+    columns.find(col => col.toLowerCase() === fieldRaw.toLowerCase()) ||
+    synonyms[fieldRaw];
+
+  if (matchedCol) {
+    query.condition = `${matchedCol} ${operator} ${value}`;
+  }
+}
+
+// pattern: "customers from chile"
+const fromMatch = lowerQ.match(/from\s+([a-zA-Z ]+)/);
+
+if (fromMatch) {
+  const value = fromMatch[1].trim();
+
+  if (columns.includes("Country")) {
+    query.condition = `Country = ${value}`;
+  }
+}
+
+// pattern: "customers in india"
+const inMatch = lowerQ.match(/in\s+([a-zA-Z ]+)/);
+
+if (inMatch && !query.condition) {
+  const value = inMatch[1].trim();
+
+  if (columns.includes("Country")) {
+    query.condition = `Country = ${value}`;
+  }
+}
   // =========================
   //  LIMIT DETECTION
   // =========================

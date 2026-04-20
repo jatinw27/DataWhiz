@@ -42,48 +42,75 @@ export function parseQuestion(question, schema) {
     }
   });
 // =========================
-//  WHERE / FILTER DETECTION
+// WHERE / MULTI FILTER (SMART)
 // =========================
-query.condition = "";
+query.conditions = [];
 
-// pattern: "where country = chile"
-const whereMatch = lowerQ.match(/where\s+([a-zA-Z ]+)\s*(=|>|<)\s*([a-zA-Z0-9 ]+)/);
+const parts = lowerQ.split(/and|or/);
+const operators = lowerQ.match(/and|or/g) || [];
 
-if (whereMatch) {
-  const fieldRaw = whereMatch[1].trim();
-  const operator = whereMatch[2];
-  const value = whereMatch[3].trim();
+parts.forEach((part, index) => {
+  part = part.trim();
 
-  const matchedCol =
-    columns.find(col => col.toLowerCase() === fieldRaw.toLowerCase()) ||
-    synonyms[fieldRaw];
+  let field = null;
+  let operator = "=";
+  let value = null;
 
-  if (matchedCol) {
-    query.condition = `${matchedCol} ${operator} ${value}`;
+  // 🔥 CASE 1: SQL STYLE → age > 20
+  const match = part.match(/([a-zA-Z ]+)\s*(=|>|<)\s*([a-zA-Z0-9 ]+)/);
+
+  if (match) {
+    field = match[1].trim();
+    operator = match[2];
+    value = match[3].trim();
+  }
+
+  //  CASE 2: "from chile"
+  else if (part.includes("from")) {
+  const match = part.match(/from\s+([a-zA-Z ]+)/);
+  if (match) {
+    field = "country";
+    value = match[1].trim();
   }
 }
 
-// pattern: "customers from chile"
-const fromMatch = lowerQ.match(/from\s+([a-zA-Z ]+)/);
-
-if (fromMatch) {
-  const value = fromMatch[1].trim();
-
-  if (columns.includes("Country")) {
-    query.condition = `Country = ${value}`;
+  //  CASE 3: "in uganda"
+  else if (part.includes("in")) {
+  const match = part.match(/in\s+([a-zA-Z ]+)/);
+  if (match) {
+    field = "country";
+    value = match[1].trim();
   }
 }
 
-// pattern: "customers in india"
-const inMatch = lowerQ.match(/in\s+([a-zA-Z ]+)/);
-
-if (inMatch && !query.condition) {
-  const value = inMatch[1].trim();
-
-  if (columns.includes("Country")) {
-    query.condition = `Country = ${value}`;
-  }
+  //  CASE 4: "first name sheryl"
+  else {
+    Object.entries(synonyms).forEach(([key, col]) => {
+      if (part.includes(key)) {
+        field = col;
+        const match = part.match(new RegExp(`${key}\\s+([a-zA-Z0-9 ]+)`));
+if (match) {
+  value = match[1].trim();
 }
+      }
+    });
+  }
+
+  if (field && value) {
+    const matchedCol =
+      columns.find(col => col.toLowerCase() === field.toLowerCase()) ||
+      synonyms[field];
+
+    if (matchedCol) {
+      query.conditions.push({
+        field: matchedCol,
+        operator,
+        value,
+        logic: index === 0 ? "and" : operators[index - 1] || "and"
+      });
+    }
+  }
+});
   // =========================
   //  LIMIT DETECTION
   // =========================
@@ -140,7 +167,7 @@ if (sortMatch) {
   }
 
   // =========================
-  // 🔥 GROUPING LOGIC
+  //  GROUPING LOGIC
   // =========================
   if (
   (lowerQ.includes("top") || lowerQ.includes("most")) &&

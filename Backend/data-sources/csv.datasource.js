@@ -67,55 +67,46 @@ export class CSVDataSource extends BaseDataSource {
       aggregation,
     } = query;
 
-    // =========================
-    // FILTER (WHERE)
-    // =========================
-    if (condition) {
-      try {
-        const match = condition.match(/(.+?)\s*(=|>|<)\s*(.+)/);
+  // =========================
+// APPLY MULTIPLE FILTERS
+// =========================
+if (query.conditions && query.conditions.length > 0) {
+  result = result.filter(row => {
+    let final = true;
 
-if (match) {
-  const field = match[1].trim();
-  const operator = match[2];
-  const valueRaw = match[3].trim();
+    query.conditions.forEach((cond, index) => {
+      let rowValue = row[cond.field];
+      let value = cond.value;
 
-  const value = isNaN(valueRaw)
-    ? valueRaw.toLowerCase()
-    : Number(valueRaw);
+      if (!rowValue) return false;
 
-  result = result.filter((row) => {
-    let rowValue = row[field];
+      rowValue = String(rowValue).toLowerCase().trim();
+      value = String(value).toLowerCase().trim();
 
-    if (rowValue === undefined) return false;
+      let conditionMet = false;
 
-    // normalize string
-    if (typeof rowValue === "string") {
-      rowValue = rowValue.toLowerCase();
-    }
+      if (cond.operator === "=") {
+        conditionMet = rowValue.includes(value);
+      } else if (cond.operator === ">") {
+        conditionMet = parseFloat(rowValue) > parseFloat(value);
+      } else if (cond.operator === "<") {
+        conditionMet = parseFloat(rowValue) < parseFloat(value);
+      }
 
-    // number compare
-    if (typeof rowValue === "number" && typeof value === "number") {
-      if (operator === ">") return rowValue > value;
-      if (operator === "<") return rowValue < value;
-      if (operator === "=") return rowValue === value;
-    }
+      if (index === 0) {
+        final = conditionMet;
+      } else {
+        if (cond.logic === "and") {
+          final = final && conditionMet;
+        } else {
+          final = final || conditionMet;
+        }
+      }
+    });
 
-    // string compare (🔥 FIX)
-   if (operator === "=") {
-  const cleanRow = String(rowValue).toLowerCase().trim();
-  const cleanValue = String(value).toLowerCase().trim();
-
-  return cleanRow === cleanValue || cleanRow.includes(cleanValue);
-}
-
-    return false;
+    return final;
   });
 }
-      } catch (err) {
-        console.log("❌ FILTER ERROR:", err.message);
-      }
-    }
-
     // =========================
     // 🔥 GROUPING
     // =========================

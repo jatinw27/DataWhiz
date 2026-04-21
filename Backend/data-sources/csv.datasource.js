@@ -50,7 +50,7 @@ export class CSVDataSource extends BaseDataSource {
   }
 
   // =========================
-  // 🔥 MAIN QUERY ENGINE
+  //  MAIN QUERY ENGINE
   // =========================
   async runQuery(query) {
     await this.loadFile();
@@ -72,43 +72,44 @@ export class CSVDataSource extends BaseDataSource {
 // =========================
 if (query.conditions && query.conditions.length > 0) {
   result = result.filter(row => {
-    let final = true;
+    let finalResult = null;
 
     query.conditions.forEach((cond, index) => {
-      let rowValue = row[cond.field];
-      let value = cond.value;
+      const actualKey = Object.keys(row).find(
+  k => k.toLowerCase() === cond.field.toLowerCase()
+);
 
-      if (!rowValue) return false;
+const rawValue = actualKey ? row[actualKey] : null;
 
-      rowValue = String(rowValue).toLowerCase().trim();
-      value = String(value).toLowerCase().trim();
+const cell = rawValue !== null ? String(rawValue).toLowerCase() : "";
+      const value = cond.value.toLowerCase();
 
-      let conditionMet = false;
+      let conditionResult = false;
 
       if (cond.operator === "=") {
-        conditionMet = rowValue.includes(value);
+        conditionResult = cell.includes(value);
       } else if (cond.operator === ">") {
-        conditionMet = parseFloat(rowValue) > parseFloat(value);
-      } else if (cond.operator === "<") {
-        conditionMet = parseFloat(rowValue) < parseFloat(value);
-      }
+  conditionResult = Number(rawValue) > Number(value);
+} else if (cond.operator === "<") {
+  conditionResult = Number(rawValue) < Number(value);
+}
 
       if (index === 0) {
-        final = conditionMet;
+        finalResult = conditionResult;
       } else {
         if (cond.logic === "and") {
-          final = final && conditionMet;
-        } else {
-          final = final || conditionMet;
+          finalResult = finalResult && conditionResult;
+        } else if (cond.logic === "or") {
+          finalResult = finalResult || conditionResult;
         }
       }
     });
 
-    return final;
+    return finalResult;
   });
 }
     // =========================
-    // 🔥 GROUPING
+    //  GROUPING
     // =========================
     if (groupBy && aggregation === "count") {
       const grouped = {};

@@ -7,7 +7,9 @@ export class CSVDataSource extends BaseDataSource {
     super();
     this.filePath = filePath;
     this.tableName = tablename || "data";
-    this.rows = [];
+
+    // 🔥 MULTI TABLE SUPPORT
+    this.tables = {};
     this.loaded = false;
   }
 
@@ -17,17 +19,19 @@ export class CSVDataSource extends BaseDataSource {
   async loadFile() {
     if (this.loaded) return;
 
+    this.tables[this.tableName] = [];
+
     return new Promise((resolve, reject) => {
       fs.createReadStream(this.filePath)
         .pipe(csv())
         .on("data", (row) => {
-          // convert numbers
           for (const key in row) {
             if (row[key] !== "" && !isNaN(row[key])) {
               row[key] = Number(row[key]);
             }
           }
-          this.rows.push(row);
+
+          this.tables[this.tableName].push(row);
         })
         .on("end", () => {
           this.loaded = true;
@@ -42,118 +46,110 @@ export class CSVDataSource extends BaseDataSource {
   // =========================
   async getSchema() {
     await this.loadFile();
-    if (!this.rows.length) return {};
+
+    const table = this.tables[this.tableName];
+    if (!table.length) return {};
 
     return {
-      [this.tableName]: Object.keys(this.rows[0]),
+      [this.tableName]: Object.keys(table[0]),
     };
   }
 
   // =========================
-  //  MAIN QUERY ENGINE
+  // MAIN QUERY ENGINE
   // =========================
   async runQuery(query) {
     await this.loadFile();
 
-    let result = [...this.rows];
+    let result = [...this.tables[query.table || this.tableName]];
 
-    const {
-      columns,
-      condition,
-      sortBy,
-      sortOrder = "asc",
-      limit,
-      groupBy,
-      aggregation,
-    } = query;
-
-  // =========================
-// APPLY MULTIPLE FILTERS
-// =========================
-if (query.conditions && query.conditions.length > 0) {
-  result = result.filter(row => {
-    let finalResult = null;
-
-    query.conditions.forEach((cond, index) => {
-
-      const actualKey = Object.keys(row).find(
-        k => k.toLowerCase() === cond.field.toLowerCase()
-      );
-
-      const rawValue = actualKey ? row[actualKey] : null;
-      const cell = rawValue !== null ? String(rawValue).toLowerCase() : "";
-      const value = cond.value ? cond.value.toLowerCase() : null;
-
-      let conditionResult = false;
-
-      if (cond.operator === "=") {
-        conditionResult = cell.includes(value);
-      } else if (cond.operator === ">") {
-        conditionResult = Number(rawValue) > Number(value);
-      } else if (cond.operator === "<") {
-        conditionResult = Number(rawValue) < Number(value);
-      } else if (cond.operator === "between") {
-        conditionResult =
-          Number(rawValue) >= Number(cond.min) &&
-          Number(rawValue) <= Number(cond.max);
-      }
-
-      // 🔥 APPLY NOT
-      if (cond.not) {
-        conditionResult = !conditionResult;
-      }
-
-      if (index === 0) {
-        finalResult = conditionResult;
-      } else {
-        if (cond.logic === "and") {
-          finalResult = finalResult && conditionResult;
-        } else if (cond.logic === "or") {
-          finalResult = finalResult || conditionResult;
-        }
-      }
-    });
-
-    return finalResult;
-  });
-}
     // =========================
-    //  GROUPING
+    // 🔥 FILTER
     // =========================
-    if (groupBy && aggregation === "count") {
+    if (query.conditions && query.conditions.length > 0) {
+      result = result.filter(row => {
+        let finalResult = null;
+
+        query.conditions.forEach((cond, index) => {
+
+          const actualKey = Object.keys(row).find(
+            k => k.toLowerCase() === cond.field.toLowerCase()
+          );
+
+          const rawValue = actualKey ? row[actualKey] : null;
+          const cell = rawValue !== null ? String(rawValue).toLowerCase() : "";
+          const value = cond.value ? cond.value.toLowerCase() : null;
+
+          let conditionResult = false;
+
+          if (cond.operator === "=") {
+            conditionResult = cell.includes(value);
+          } else if (cond.operator === ">") {
+            conditionResult = Number(rawValue) > Number(value);
+          } else if (cond.operator === "<") {
+            conditionResult = Number(rawValue) < Number(value);
+          } else if (cond.operator === "between") {
+            conditionResult =
+              Number(rawValue) >= Number(cond.min) &&
+              Number(rawValue) <= Number(cond.max);
+          }
+
+          // NOT
+          if (cond.not) conditionResult = !conditionResult;
+
+          if (index === 0) {
+            finalResult = conditionResult;
+          } else {
+            if (cond.logic === "and") {
+              finalResult = finalResult && conditionResult;
+            } else {
+              finalResult = finalResult || conditionResult;
+            }
+          }
+        });
+
+        return finalResult;
+      });
+    }
+
+    // =========================
+    // 🔥 GROUP
+    // =========================
+    if (query.groupBy && query.aggregation === "count") {
       const grouped = {};
 
-      result.forEach((row) => {
-        const key = row[groupBy];
+      result.forEach(row => {
+        const key = row[query.groupBy];
         grouped[key] = (grouped[key] || 0) + 1;
       });
 
       result = Object.entries(grouped).map(([key, count]) => ({
-        [groupBy]: key,
+        [query.groupBy]: key,
         count,
       }));
 
-      // sort grouped results (descending)
       result.sort((a, b) => b.count - a.count);
     }
 
     // =========================
-    // 🔥 SORTING
+    // 🔥 SORT (CASE SAFE)
     // =========================
-    if (sortBy) {
+    if (query.sortBy) {
       result.sort((a, b) => {
-        const valA = a[sortBy];
-        const valB = b[sortBy];
+        const keyA = Object.keys(a).find(
+          k => k.toLowerCase() === query.sortBy.toLowerCase()
+        );
 
-        // string sorting
+        const valA = keyA ? a[keyA] : null;
+        const valB = keyA ? b[keyA] : null;
+
         if (typeof valA === "string") {
-          return sortOrder === "asc"
+          return query.sortOrder === "asc"
             ? valA.localeCompare(valB)
             : valB.localeCompare(valA);
         }
 
-        // number sorting
-        return sortOrder === "asc"
+        return query.sortOrder === "asc"
           ? valA - valB
           : valB - valA;
       });
@@ -162,111 +158,29 @@ if (query.conditions && query.conditions.length > 0) {
     // =========================
     // 🔥 LIMIT
     // =========================
-    if (limit) {
-      result = result.slice(0, limit);
+    if (query.limit) {
+      result = result.slice(0, query.limit);
     }
 
     // =========================
-    // 🔥 SELECT COLUMNS
+    // 🔥 SELECT COLUMNS (CASE SAFE)
     // =========================
-    if (columns && columns.length > 0) {
-      result = result.map((row) => {
+    if (query.columns && query.columns.length > 0) {
+      result = result.map(row => {
         const filtered = {};
-        columns.forEach((col) => {
-          filtered[col] = row[col];
+
+        query.columns.forEach(col => {
+          const key = Object.keys(row).find(
+            k => k.toLowerCase() === col.toLowerCase()
+          );
+          filtered[col] = key ? row[key] : null;
         });
+
         return filtered;
       });
     }
 
     return result;
-  }
-
-  // =========================
-  // EXTRA UTILS
-  // =========================
-  async getRowCount() {
-    await this.loadFile();
-    return this.rows.length;
-  }
-
-  async getColumnStats() {
-    await this.loadFile();
-
-    const stats = {};
-    if (!this.rows.length) return stats;
-
-    const columns = Object.keys(this.rows[0]);
-
-    columns.forEach((col) => {
-      const values = this.rows
-        .map((r) => r[col])
-        .filter((v) => v !== null && v !== "");
-
-      const numeric = values.filter((v) => typeof v === "number");
-      const dates = values.filter((v) => !isNaN(Date.parse(v)));
-
-      stats[col] = {
-        type:
-          numeric.length === values.length
-            ? "number"
-            : dates.length === values.length
-            ? "date"
-            : "string",
-        uniqueCount: new Set(values).size,
-        sample: values.slice(0, 3),
-      };
-    });
-
-    return stats;
-  }
-
-  async getInsights() {
-    await this.loadFile();
-
-    const insights = [];
-    if (!this.rows.length) return insights;
-
-    const columns = Object.keys(this.rows[0]);
-
-    columns.forEach((col) => {
-      const values = this.rows.map((r) => r[col]);
-
-      // missing
-      const missing = values.filter(
-        (v) => v === null || v === ""
-      ).length;
-
-      if (missing > 0) {
-        insights.push({
-          type: "missing",
-          column: col,
-          count: missing,
-        });
-      }
-
-      // frequency
-      const freq = {};
-      values.forEach((v) => {
-        if (v !== null && v !== "") {
-          freq[v] = (freq[v] || 0) + 1;
-        }
-      });
-
-      const top = Object.entries(freq)
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 3);
-
-      if (top.length > 0) {
-        insights.push({
-          type: "topValues",
-          column: col,
-          values: top,
-        });
-      }
-    });
-
-    return insights;
   }
 
   getType() {
@@ -275,6 +189,6 @@ if (query.conditions && query.conditions.length > 0) {
 
   async getData() {
     await this.loadFile();
-    return this.rows;
+    return this.tables[this.tableName];
   }
 }

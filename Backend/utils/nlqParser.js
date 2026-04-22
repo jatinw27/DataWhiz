@@ -11,8 +11,16 @@ export function parseQuestion(question, schema) {
     sortOrder: "asc"
   };
 
-  const tableName = Object.keys(schema)[0];
-  const columns = schema[tableName];
+  const tableNames = Object.keys(schema);
+
+let detectedTable = tableNames.find(t =>
+  lowerQ.includes(t.toLowerCase())
+);
+
+if (!detectedTable) detectedTable = tableNames[0];
+
+const columns = schema[detectedTable];
+query.table = detectedTable;
 
   // =========================
   // COLUMN MATCH

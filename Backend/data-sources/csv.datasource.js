@@ -75,24 +75,33 @@ if (query.conditions && query.conditions.length > 0) {
     let finalResult = null;
 
     query.conditions.forEach((cond, index) => {
+
       const actualKey = Object.keys(row).find(
-  k => k.toLowerCase() === cond.field.toLowerCase()
-);
+        k => k.toLowerCase() === cond.field.toLowerCase()
+      );
 
-const rawValue = actualKey ? row[actualKey] : null;
-
-const cell = rawValue !== null ? String(rawValue).toLowerCase() : "";
-      const value = cond.value.toLowerCase();
+      const rawValue = actualKey ? row[actualKey] : null;
+      const cell = rawValue !== null ? String(rawValue).toLowerCase() : "";
+      const value = cond.value ? cond.value.toLowerCase() : null;
 
       let conditionResult = false;
 
       if (cond.operator === "=") {
         conditionResult = cell.includes(value);
       } else if (cond.operator === ">") {
-  conditionResult = Number(rawValue) > Number(value);
-} else if (cond.operator === "<") {
-  conditionResult = Number(rawValue) < Number(value);
-}
+        conditionResult = Number(rawValue) > Number(value);
+      } else if (cond.operator === "<") {
+        conditionResult = Number(rawValue) < Number(value);
+      } else if (cond.operator === "between") {
+        conditionResult =
+          Number(rawValue) >= Number(cond.min) &&
+          Number(rawValue) <= Number(cond.max);
+      }
+
+      // 🔥 APPLY NOT
+      if (cond.not) {
+        conditionResult = !conditionResult;
+      }
 
       if (index === 0) {
         finalResult = conditionResult;

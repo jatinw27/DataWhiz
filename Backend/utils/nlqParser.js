@@ -3,24 +3,26 @@ export function parseQuestion(question, schema) {
 
   let query = {
     columns: [],
-    condition: "",
+    conditions: [],
     aggregation: "",
     limit: null,
-    groupBy: null
+    groupBy: null,
+    sortBy: null,
+    sortOrder: "asc"
   };
 
-  const tableName = Object.keys(schema)[0]
+  const tableName = Object.keys(schema)[0];
   const columns = schema[tableName];
 
   // =========================
-  // 🔹 COLUMN MATCH
+  // COLUMN MATCH
   // =========================
   query.columns = columns.filter(col =>
     lowerQ.includes(col.toLowerCase())
   );
 
   // =========================
-  //  SYNONYMS (NON-DESTRUCTIVE)
+  // SYNONYMS
   // =========================
   const synonyms = {
     "first name": "First Name",
@@ -31,7 +33,8 @@ export function parseQuestion(question, schema) {
     "countries": "Country",
     "city": "City",
     "cities": "City",
-    "company": "Company"
+    "company": "Company",
+    "age": "Age"
   };
 
   Object.entries(synonyms).forEach(([key, value]) => {
@@ -41,162 +44,149 @@ export function parseQuestion(question, schema) {
       }
     }
   });
-// =========================
-// WHERE / MULTI FILTER (SMART)
-// =========================
-query.conditions = [];
 
-const parts = lowerQ.split(/and|or/);
-const operators = lowerQ.match(/and|or/g) || [];
+  // =========================
+  // SAFE SPLIT (BETWEEN FIX)
+  // =========================
+  const parts = lowerQ
+    .replace(/between\s+(\d+)\s+and\s+(\d+)/g, "between_$1_$2")
+    .split(/and|or/)
+    .map(p =>
+      p.replace(/between_(\d+)_(\d+)/, "between $1 and $2").trim()
+    );
 
-parts.forEach((part, index) => {
-  part = part.trim();
+  const operators = lowerQ.match(/and|or/g) || [];
 
-  let field = null;
-  let operator = "=";
-  let value = null;
+  // =========================
+  // CONDITIONS PARSING
+  // =========================
+  parts.forEach((part, index) => {
 
-  // 🔥 CASE 1: SQL STYLE → age > 20
-  const match = part.match(/([a-zA-Z ]+)\s*(=|>|<)\s*([a-zA-Z0-9 ]+)/);
+    // 🔥 NOT detection FIRST
+    const isNot = part.includes("not") || part.includes("!=");
 
-  if (match) {
-    field = match[1].trim();
-    operator = match[2];
-    value = match[3].trim();
-  }
+    // clean
+    part = part.replace("not", "").replace("!=", "=").trim();
 
-  //  CASE 2: "from chile"
-  else if (part.includes("from")) {
-  const match = part.match(/from\s+([a-zA-Z ]+)/);
-  if (match) {
-    field = "country";
-    value = match[1].trim();
-  }
-}
+    let field = null;
+    let operator = "=";
+    let value = null;
 
-  //  CASE 3: "in uganda"
-  else if (part.includes("in")) {
-  const match = part.match(/in\s+([a-zA-Z ]+)/);
-  if (match) {
-    field = "country";
-    value = match[1].trim();
-  }
-}
+    // =========================
+    // BETWEEN
+    // =========================
+    const betweenMatch = part.match(/([a-zA-Z ]+)\s+between\s+(\d+)\s+and\s+(\d+)/);
 
-  //  CASE 4: "first name sheryl"
-  else {
-    Object.entries(synonyms).forEach(([key, col]) => {
-      if (part.includes(key)) {
-        field = col;
-        const match = part.match(new RegExp(`${key}\\s+([a-zA-Z0-9 ]+)`));
-if (match) {
-  value = match[1].trim();
-}
+    if (betweenMatch) {
+      field = betweenMatch[1].trim();
+
+      query.conditions.push({
+        field,
+        operator: "between",
+        min: betweenMatch[2],
+        max: betweenMatch[3],
+        logic: index === 0 ? "and" : operators[index - 1] || "and",
+        not: isNot
+      });
+
+      return;
+    }
+
+    // =========================
+    // SQL STYLE
+    // =========================
+    const match = part.match(/([a-zA-Z ]+)\s*(=|>|<)\s*([a-zA-Z0-9 ]+)/);
+
+    if (match) {
+      field = match[1].trim();
+      operator = match[2];
+      value = match[3].trim();
+    }
+
+    // =========================
+    // FROM
+    // =========================
+    else if (part.includes("from")) {
+      const m = part.match(/from\s+([a-zA-Z ]+)/);
+      if (m) {
+        field = "country";
+        value = m[1].trim();
       }
-    });
+    }
+
+    // =========================
+    // IN
+    // =========================
+    else if (part.includes("in")) {
+      const m = part.match(/in\s+([a-zA-Z ]+)/);
+      if (m) {
+        field = "country";
+        value = m[1].trim();
+      }
+    }
+
+    // =========================
+    // SYNONYM FIELD VALUE
+    // =========================
+    else {
+      Object.entries(synonyms).forEach(([key, col]) => {
+        if (part.includes(key)) {
+          field = col;
+          const m = part.match(new RegExp(`${key}\\s+([a-zA-Z0-9 ]+)`));
+          if (m) value = m[1].trim();
+        }
+      });
+    }
+
+    if (field && value) {
+      const matchedCol =
+        columns.find(col => col.toLowerCase() === field.toLowerCase()) ||
+        synonyms[field];
+
+      if (matchedCol) {
+        query.conditions.push({
+          field: matchedCol,
+          operator,
+          value,
+          logic: index === 0 ? "and" : operators[index - 1] || "and",
+          not: isNot
+        });
+      }
+    }
+  });
+
+  // =========================
+  // LIMIT
+  // =========================
+  const topMatch = lowerQ.match(/top\s*(\d+)/);
+  if (topMatch) query.limit = parseInt(topMatch[1]);
+
+  if (
+    !query.limit &&
+    (lowerQ.includes("first ") || lowerQ === "first") &&
+    !lowerQ.includes("first name")
+  ) {
+    query.limit = 1;
   }
 
-  if (field && value) {
+  // =========================
+  // SORT
+  // =========================
+  const sortMatch = lowerQ.match(/by\s+([a-zA-Z ]+)/);
+
+  if (sortMatch) {
+    let field = sortMatch[1].replace(/desc|asc|ascending|descending/g, "").trim();
+
     const matchedCol =
       columns.find(col => col.toLowerCase() === field.toLowerCase()) ||
       synonyms[field];
 
-    if (matchedCol) {
-      query.conditions.push({
-        field: matchedCol,
-        operator,
-        value,
-        logic: index === 0 ? "and" : operators[index - 1] || "and"
-      });
-    }
-  }
-});
-  // =========================
-  //  LIMIT DETECTION
-  // =========================
- const topMatch = lowerQ.match(/top\s*(\d+)/);
-if (topMatch) {
-  query.limit = parseInt(topMatch[1]);
-}
-
-if (
-  !query.limit &&
-  (lowerQ.includes("first ") || lowerQ === "first") &&
-  !lowerQ.includes("first name")
-) {
-  query.limit = 1;
-}
-
-// =========================
-//  SORT DETECTION (SMART)
-// =========================
-query.sortBy = null;
-query.sortOrder = "asc"; // default
-
-const sortMatch = lowerQ.match(/by\s+([a-zA-Z ]+)/);
-
-if (sortMatch) {
-  let field = sortMatch[1].trim();
-
-  // remove extra words like "desc", "ascending"
-  field = field.replace(/desc|descending|asc|ascending/g, "").trim();
-
-  // match with schema OR synonyms
-  const matchedCol =
-    columns.find(col => col.toLowerCase() === field.toLowerCase()) ||
-    synonyms[field];
-
-  if (matchedCol) {
-    query.sortBy = matchedCol;
-  }
-
-  if (lowerQ.includes("desc")) {
-    query.sortOrder = "desc";
-  }
-}
-  // =========================
-  //  SPECIAL CASE: TOP CUSTOMERS
-  // =========================
-  if (lowerQ.includes("top") && lowerQ.includes("customer")) {
-    query.limit = query.limit || 5;
-
-    // show meaningful columns instead of just ID
-    query.columns = ["Customer Id", "First Name", "Country"];
-
-    
+    if (matchedCol) query.sortBy = matchedCol;
+    if (lowerQ.includes("desc")) query.sortOrder = "desc";
   }
 
   // =========================
-  //  GROUPING LOGIC
-  // =========================
-  if (
-  (lowerQ.includes("top") || lowerQ.includes("most")) &&
-  query.columns.length === 1 &&
-  !query.sortBy // 🔥 IMPORTANT
-) {
-      const col = query.columns[0];
-      const meta = schema[col];
-
-      // only group if NOT unique
-      if (meta && meta.uniqueCount < 50) {
-        query.groupBy = col;
-        query.aggregation = "count";
-      } else {
-        // otherwise just limit rows
-        query.limit = query.limit || 5;
-      }
-    }
-  
-
-  // =========================
-  // 🔹 COUNT
-  // =========================
-  if (lowerQ.includes("count")) {
-    query.aggregation = "count";
-  }
-
-  // =========================
-  // 🔹 FALLBACK
+  // FALLBACK
   // =========================
   if (query.columns.length === 0) {
     query.columns = columns;

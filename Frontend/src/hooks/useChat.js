@@ -4,7 +4,7 @@ import {
   sendChatMessage,
   getDatasetSummary,
 } from "../services/api";
-import { detectChart } from "../../../Backend/utils/chartDetector.js";
+import { detectChart } from "../utils/chartDetector.js";
 /* =========================
    SIMPLE ENGLISH EXPLANATION
 ========================= */
@@ -199,11 +199,11 @@ This dataset appears suitable for customer analysis, reporting, and trend explor
           res = {
             data: {
               answer: summaryText,
-              data: null, // 🚫 no table for summary
+              data: null, //  no table for summary
             },
           };
         }
-        // ✅ NORMAL DATA QUESTION
+        //  NORMAL DATA QUESTION
         else {
          res = await askNLQ({
   question: text,
@@ -221,7 +221,7 @@ This dataset appears suitable for customer analysis, reporting, and trend explor
       }
 
       const dataResult = res.data?.data || [];
-      const chartResult = detectChart(dataResult)
+      const chartResult = res.data.chart || detectChart(dataResult);
 
       /* ===== FINAL TEXT ===== */
       let fullText;

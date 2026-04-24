@@ -8,9 +8,13 @@ export class CSVDataSource extends BaseDataSource {
     this.filePath = filePath;
     this.tableName = tablename || "data";
 
-    // 🔥 MULTI TABLE SUPPORT
     this.tables = {};
     this.loaded = false;
+  }
+
+  async getRowCount() {
+    await this.loadFile();
+    return this.tables[this.tableName].length;
   }
 
   // =========================
@@ -25,6 +29,7 @@ export class CSVDataSource extends BaseDataSource {
       fs.createReadStream(this.filePath)
         .pipe(csv())
         .on("data", (row) => {
+          // convert numbers
           for (const key in row) {
             if (row[key] !== "" && !isNaN(row[key])) {
               row[key] = Number(row[key]);
@@ -54,36 +59,45 @@ export class CSVDataSource extends BaseDataSource {
       [this.tableName]: Object.keys(table[0]),
     };
   }
-
   // =========================
   // MAIN QUERY ENGINE
   // =========================
-  async runQuery(query) {
-    await this.loadFile();
 
+  async runQuery(query) {
+console.log("QUERY OBJECT:", query);
+
+    await this.loadFile();
     let result = [...this.tables[query.table || this.tableName]];
+console.log("Columns:", Object.keys(result[0] || {}));
 
     // =========================
-    // 🔥 FILTER
+    // FILTER
     // =========================
     if (query.conditions && query.conditions.length > 0) {
-      result = result.filter(row => {
+      result = result.filter((row) => {
         let finalResult = null;
 
         query.conditions.forEach((cond, index) => {
-
           const actualKey = Object.keys(row).find(
-            k => k.toLowerCase() === cond.field.toLowerCase()
+            (k) => k.toLowerCase().replace(/\s+/g, '') === cond.field.toLowerCase().replace(/\s+/g, '')
           );
 
           const rawValue = actualKey ? row[actualKey] : null;
-          const cell = rawValue !== null ? String(rawValue).toLowerCase() : "";
+
+          const isNumber = typeof rawValue === "number";
+
+          const cell = isNumber
+            ? rawValue
+            : String(rawValue || "").toLowerCase();
+
           const value = cond.value ? cond.value.toLowerCase() : null;
 
           let conditionResult = false;
 
           if (cond.operator === "=") {
-            conditionResult = cell.includes(value);
+            conditionResult = isNumber
+              ? rawValue === Number(value)
+              : cell === value;
           } else if (cond.operator === ">") {
             conditionResult = Number(rawValue) > Number(value);
           } else if (cond.operator === "<") {
@@ -94,7 +108,7 @@ export class CSVDataSource extends BaseDataSource {
               Number(rawValue) <= Number(cond.max);
           }
 
-          // NOT
+          // NOT support
           if (cond.not) conditionResult = !conditionResult;
 
           if (index === 0) {
@@ -113,35 +127,43 @@ export class CSVDataSource extends BaseDataSource {
     }
 
     // =========================
-    // 🔥 GROUP
+    // GROUP BY (FINAL)
     // =========================
     if (query.groupBy && query.aggregation === "count") {
+      const actualKey = Object.keys(result[0] || {}).find(
+        (k) => k.toLowerCase() === query.groupBy.toLowerCase()
+      );
+
+      if (!actualKey) return [];
+
       const grouped = {};
 
-      result.forEach(row => {
-        const key = row[query.groupBy];
+      result.forEach((row) => {
+        const key = row[actualKey];
         grouped[key] = (grouped[key] || 0) + 1;
       });
 
-      result = Object.entries(grouped).map(([key, count]) => ({
-        [query.groupBy]: key,
-        count,
+      return Object.entries(grouped).map(([key, count]) => ({
+        label: key,
+        value: count,
       }));
-
-      result.sort((a, b) => b.count - a.count);
     }
 
     // =========================
-    // 🔥 SORT (CASE SAFE)
+    // SORT (FIXED)
     // =========================
     if (query.sortBy) {
       result.sort((a, b) => {
         const keyA = Object.keys(a).find(
-          k => k.toLowerCase() === query.sortBy.toLowerCase()
+          (k) => k.toLowerCase() === query.sortBy.toLowerCase()
+        );
+
+        const keyB = Object.keys(b).find(
+          (k) => k.toLowerCase() === query.sortBy.toLowerCase()
         );
 
         const valA = keyA ? a[keyA] : null;
-        const valB = keyA ? b[keyA] : null;
+        const valB = keyB ? b[keyB] : null;
 
         if (typeof valA === "string") {
           return query.sortOrder === "asc"
@@ -156,23 +178,24 @@ export class CSVDataSource extends BaseDataSource {
     }
 
     // =========================
-    // 🔥 LIMIT
+    // LIMIT
     // =========================
     if (query.limit) {
       result = result.slice(0, query.limit);
     }
 
     // =========================
-    // 🔥 SELECT COLUMNS (CASE SAFE)
+    // SELECT COLUMNS
     // =========================
     if (query.columns && query.columns.length > 0) {
-      result = result.map(row => {
+      result = result.map((row) => {
         const filtered = {};
 
-        query.columns.forEach(col => {
+        query.columns.forEach((col) => {
           const key = Object.keys(row).find(
-            k => k.toLowerCase() === col.toLowerCase()
+            (k) => k.toLowerCase() === col.toLowerCase()
           );
+
           filtered[col] = key ? row[key] : null;
         });
 

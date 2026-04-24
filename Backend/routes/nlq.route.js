@@ -27,7 +27,8 @@ router.post("/", async (req, res) => {
       answer: data.length
         ? `Showing ${data.length} result${data.length > 1 ? "s" : ""}.`
         : "No matching records found.",
-      data
+      data,
+       chart: query.visualize ? query.chartType : null
     });
 
   } catch (err) {

@@ -35,7 +35,7 @@ query.table = detectedTable;
   const synonyms = {
     "first name": "First Name",
     "last name": "Last Name",
-    "customer": "Customer Id",
+    "customer id": "Customer Id",
     "customers": "Customer Id",
     "country": "Country",
     "countries": "Country",
@@ -52,9 +52,30 @@ query.table = detectedTable;
       }
     }
   });
+// =========================
+// AGGREGATION 
+// =========================
+if (lowerQ.includes("count")) {
+  query.aggregation = "count";
 
+  const groupMatch = lowerQ.match(/by\s+([a-zA-Z ]+)/);
+
+  if (groupMatch) {
+    let field = groupMatch[1].trim();
+
+    const matchedCol =
+      columns.find(col => col.toLowerCase() === field.toLowerCase()) ||
+      synonyms[field];
+
+    if (matchedCol) {
+      query.groupBy = matchedCol;
+    }
+  }
+
+  return query;
+}
   // =========================
-  // SAFE SPLIT (BETWEEN FIX)
+  // SAFE SPLIT 
   // =========================
   const parts = lowerQ
     .replace(/between\s+(\d+)\s+and\s+(\d+)/g, "between_$1_$2")
@@ -70,7 +91,7 @@ query.table = detectedTable;
   // =========================
   parts.forEach((part, index) => {
 
-    // 🔥 NOT detection FIRST
+    //  NOT detection FIRST
     const isNot = part.includes("not") || part.includes("!=");
 
     // clean
@@ -177,28 +198,55 @@ query.table = detectedTable;
     query.limit = 1;
   }
 
-  // =========================
-  // SORT
-  // =========================
+ // =========================
+// SORT (FIXED)
+// =========================
+if (!lowerQ.includes("count")) {
   const sortMatch = lowerQ.match(/by\s+([a-zA-Z ]+)/);
 
   if (sortMatch) {
-    let field = sortMatch[1].replace(/desc|asc|ascending|descending/g, "").trim();
+    let field = sortMatch[1]
+      .replace(/desc|asc|ascending|descending/g, "")
+      .trim();
 
     const matchedCol =
       columns.find(col => col.toLowerCase() === field.toLowerCase()) ||
       synonyms[field];
 
     if (matchedCol) query.sortBy = matchedCol;
+
     if (lowerQ.includes("desc")) query.sortOrder = "desc";
   }
-
+}
   // =========================
   // FALLBACK
   // =========================
   if (query.columns.length === 0) {
     query.columns = columns;
   }
+// =========================
+//  AUTO VISUALIZATION
+// =========================
+query.visualize = false;
+query.chartType = "bar";
 
+if (
+  lowerQ.includes("top") ||
+  lowerQ.includes("count") ||
+  lowerQ.includes("distribution") ||
+  lowerQ.includes("by")
+) {
+  query.visualize = true;
+}
+
+// smarter detection
+if (lowerQ.includes("trend")) {
+  query.chartType = "line";
+}
+
+if (lowerQ.includes("percentage") || lowerQ.includes("share")) {
+  query.chartType = "pie";
+}
   return query;
 }
+  

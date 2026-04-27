@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
-import DataChart from "../DataChart.jsx";
+// import DataChart from "../DataChart.jsx";
+import ChartRenderer from "../ChartRenderer.jsx";
 
 export default function MessageBubble({
   text,
@@ -64,11 +65,11 @@ export default function MessageBubble({
       )}
 
       {/* CHART */}
-      {chart && data && (
-        <div className="mt-4">
-          <DataChart data={data} chart={chart} />
-        </div>
-      )}
+      {chart && data && Array.isArray(data) && data.length > 0 && (
+  <div className="mt-4">
+    <ChartRenderer data={data} chartType={chart} />
+  </div>
+)}
 
       {/* STATUS */}
       {isUser && (

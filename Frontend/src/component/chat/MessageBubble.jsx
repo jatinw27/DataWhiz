@@ -71,6 +71,11 @@ export default function MessageBubble({
   </div>
 )}
 
+{insights && (
+  <div className="mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-sm">
+    💡 {insights}
+  </div>
+)}
       {/* STATUS */}
       {isUser && (
         <div className="text-[10px] text-right mt-2 text-gray-300">

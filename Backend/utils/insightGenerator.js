@@ -1,31 +1,16 @@
 export function generateInsights(data) {
+  if (!data || data.length === 0) return null;
 
-  if (!Array.isArray(data) || data.length === 0) return null;
-
-  const keys = Object.keys(data[0]);
-
-  if (keys.length !== 2) return null;
-
-  const [dimension, metric] = keys;
-
-  const sorted = [...data].sort((a, b) => b[metric] - a[metric]);
+  // sort descending
+  const sorted = [...data].sort((a, b) => b.value - a.value);
 
   const top = sorted[0];
-  const second = sorted[1];
+  const avg =
+    sorted.reduce((sum, d) => sum + d.value, 0) / sorted.length;
 
-  let insights = [];
-
-  if (top) {
-    insights.push(
-      `${top[dimension]} has the highest ${metric} (${top[metric]}).`
-    );
-  }
-
-  if (second) {
-    insights.push(
-      `${second[dimension]} is the second highest with ${second[metric]}.`
-    );
-  }
-
-  return insights.join(" ");
+  return `
+Top category is ${top.label} with ${top.value} records.
+Average count across categories is ${avg.toFixed(1)}.
+Distribution is ${top.value > avg * 2 ? "skewed" : "balanced"}.
+`;
 }

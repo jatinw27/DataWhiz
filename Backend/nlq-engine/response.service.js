@@ -1,26 +1,54 @@
+import { generateInsights } from "../utils/insightGenerator.js";
+
 export function toNaturalLanguage(rows) {
-  if (!rows || rows.length === 0) return "No data found.";
+  if (!rows || rows.length === 0) {
+    return {
+      text: "No data found.",
+      data: [],
+      insights: null
+    };
+  }
 
   const row = rows[0];
+  const insights = generateInsights(rows);
 
-  // ✅ Handle COUNT(*) edge cases
+  // COUNT cases
   if (row.count !== undefined) {
-    return `There are ${row.count} records.`;
+    return {
+      text: `There are ${row.count} records.`,
+      data: rows,
+      insights
+    };
   }
 
   if (row["count(*)"] !== undefined) {
-    return `There are ${row["count(*)"]} records.`;
+    return {
+      text: `There are ${row["count(*)"]} records.`,
+      data: rows,
+      insights
+    };
   }
 
   if (row.value !== undefined) {
-    return `The result is ${row.value}.`;
+    return {
+      text: `The result is ${row.value}.`,
+      data: rows,
+      insights
+    };
   }
 
-  return rows
+  // Default (table output)
+  const text = rows
     .map(r =>
       Object.entries(r)
         .map(([k, v]) => `${k}: ${v}`)
         .join(", ")
     )
     .join(". ");
+
+  return {
+    text,
+    data: rows,
+    insights
+  };
 }

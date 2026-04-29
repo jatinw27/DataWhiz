@@ -69,11 +69,11 @@ export default function MessageBubble({
       )}
 
       {/* CHART  */}
-      {detectedChart && data && data.length > 0 && (
-        <div className="mt-4">
-          <DataChart data={data} chart={detectedChart} />
-        </div>
-      )}
+      {detectedChart && data && Array.isArray(data) && data.length > 0 && (
+  <div className="mt-4 p-4 bg-[#111] rounded-xl border border-gray-800">
+    <ChartRenderer data={data} chartType={detectedChart} />
+  </div>
+)}
 
       {/*  INSIGHTS  */}
       {insights && (

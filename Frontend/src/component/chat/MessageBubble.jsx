@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 // import DataChart from "../DataChart.jsx";
 import ChartRenderer from "../ChartRenderer.jsx";
+import { detectChartType } from "../../utils/chartDetector.js";
 
 export default function MessageBubble({
   text,
@@ -12,6 +13,7 @@ export default function MessageBubble({
   isGrouped,
 }) {
   const isUser = sender === "user";
+  const detectedChart = chart || detectChartType(data)
 
   return (
     <motion.div

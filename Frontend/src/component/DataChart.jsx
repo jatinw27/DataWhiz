@@ -1,64 +1,73 @@
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid
+  BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid,
+  PieChart, Pie, Cell
 } from "recharts";
 
 export default function DataChart({ data, chart }) {
+  if (!data || data.length === 0) return null;
 
-<h3 className="font-semibold mb-2">{chart.column}</h3>
-
-  if (!data || data.length === 0) {
-    return <p className="text-sm text-gray-400">No data for chart</p>;
+  // BAR CHART (grouped)
+  if (chart === "bar" || chart?.type === "bar") {
+    return (
+      <BarChart width={600} height={300} data={data}>
+        <CartesianGrid strokeDasharray="3 3" />
+        <XAxis dataKey="label" />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="value" fill="#22c55e" />
+      </BarChart>
+    );
   }
 
-  // 🔥 HISTOGRAM (numeric column)
-  if (chart.type === "histogram") {
+  // PIE CHART
+  if (chart === "pie") {
+    return (
+      <PieChart width={400} height={300}>
+        <Pie
+          data={data}
+          dataKey="value"
+          nameKey="label"
+          outerRadius={100}
+        >
+          {data.map((_, i) => (
+            <Cell key={i} fill="#22c55e" />
+          ))}
+        </Pie>
+        <Tooltip />
+      </PieChart>
+    );
+  }
 
+  // HISTOGRAM
+  if (chart?.type === "histogram") {
     const values = data
       .map(d => Number(d[chart.x]))
       .filter(v => !isNaN(v));
-const binSize = 10; // group into ranges
-const freq = {};
 
-values.forEach(v => {
-  const bin = Math.floor(v / binSize) * binSize;
-  const label = `${bin}-${bin + binSize}`;
+    const binSize = 10;
+    const freq = {};
 
-  freq[label] = (freq[label] || 0) + 1;
-});
+    values.forEach(v => {
+      const bin = Math.floor(v / binSize) * binSize;
+      const label = `${bin}-${bin + binSize}`;
+      freq[label] = (freq[label] || 0) + 1;
+    });
 
-const chartData = Object.entries(freq).map(([range, count]) => ({
-  range,
-  count
-}));
+    const chartData = Object.entries(freq).map(([range, count]) => ({
+      label: range,
+      value: count
+    }));
 
     return (
       <BarChart width={600} height={300} data={chartData}>
         <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="range" />
+        <XAxis dataKey="label" />
         <YAxis />
         <Tooltip />
-        <Bar dataKey="count" />
+        <Bar dataKey="value" fill="#22c55e" />
       </BarChart>
     );
   }
 
-  // 🔥 TOP VALUES (categorical)
-  if (chart.type === "topValues") {
-    return (
-      <BarChart width={500} height={300} data={chart.values}>
-        <CartesianGrid strokeDasharray="3 3" />
-        <XAxis dataKey="name" />
-        <YAxis />
-        <Tooltip />
-        <Bar dataKey="count" />
-      </BarChart>
-    );
-  }
-
-  return <p>Unsupported chart</p>;
+  return <p className="text-gray-400">Unsupported chart</p>;
 }

@@ -10,6 +10,7 @@ import { aiGenerateQuery } from "./ai-structured.service.js";
 import { detectChart } from "../utils/chartDetector.js";
 import { generateInsights } from "../utils/insightGenerator.js";
 import { exploreDataset } from "../utils/datasetExplorer.js";
+import { aiFallback } from "./ai-fallback.service.js";
 
 export async function handleNLQ(req, res) {
   const { question, text, source = "sqlite", dataset } = req.body;
@@ -19,7 +20,7 @@ export async function handleNLQ(req, res) {
     return res.json({ answer: "Question is missing or invalid." });
   }
 
-  // ✅ SELECT DATASOURCE
+  //  SELECT DATASOURCE
   let dataSource;
 
   if (source === "csv") {
@@ -35,7 +36,7 @@ export async function handleNLQ(req, res) {
     return res.json({ answer: "Invalid data source selected." });
   }
   
-// 🔍 Dataset exploration questions
+//  Dataset exploration questions
 const exploration = exploreDataset(dataSource, finalQuestion);
 
 if (exploration) {
@@ -127,5 +128,22 @@ return res.json({
   chart,
   source
 });
+let response = toNaturalLanguage(rows);
 
+//  IF NO DATA → use AI
+if (!rows || rows.length === 0) {
+  const aiText = await aiFallback(userQuery, allData);
+
+  return res.json({
+    text: aiText,
+    data: [],
+    insights: null,
+    chart: null,
+  });
+}
+
+return res.json({
+  ...response,
+  chart: query.chartType || null,
+});
 }

@@ -1,33 +1,35 @@
-import { Groq } from "groq-sdk";
+import OpenAI from "openai";
 
-/**
- * Uses AI only when rule engine fails
- */
-export async function aiGenerateSQL(question, schema) {
-  const groq = new Groq({
-    apiKey: process.env.GROQ_API_KEY
-  });
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-  const prompt = `
-You are an expert SQL generator.
+export async function aiFallback(question, rows) {
+  try {
+    const preview = rows.slice(0, 10); // avoid huge data
 
-Database schema:
-${JSON.stringify(schema, null, 2)}
+    const prompt = `
+You are a data analyst.
 
 User question:
 "${question}"
 
-Rules:
-- Only generate valid SQLite SQL
-- Use only tables and columns from schema
-- Return ONLY SQL, no explanation
+Dataset sample:
+${JSON.stringify(preview, null, 2)}
+
+Answer in simple English.
+Give insight, not raw JSON.
 `;
 
-  const completion = await groq.chat.completions.create({
-    model: "llama-3.3-70b-versatile",
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0
-  });
+    const res = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{ role: "user", content: prompt }],
+    });
 
-  return completion.choices[0].message.content.trim();
+    return res.choices[0].message.content;
+
+  } catch (err) {
+    console.error("AI FALLBACK ERROR:", err);
+    return "AI analysis failed.";
+  }
 }

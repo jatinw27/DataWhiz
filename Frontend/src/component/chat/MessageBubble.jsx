@@ -1,6 +1,5 @@
 import { motion } from "framer-motion";
-// import DataChart from "../DataChart.jsx";
-import ChartRenderer from "../ChartRenderer.jsx";
+import DataChart from "../DataChart.jsx";
 import { detectChartType } from "../../utils/chartDetector.js";
 
 export default function MessageBubble({
@@ -8,12 +7,15 @@ export default function MessageBubble({
   sender,
   data,
   chart,
+  insights, 
   time,
   status,
   isGrouped,
 }) {
   const isUser = sender === "user";
-  const detectedChart = chart || detectChartType(data)
+
+  //  use detected chart
+  const detectedChart = chart || detectChartType(data);
 
   return (
     <motion.div
@@ -66,18 +68,20 @@ export default function MessageBubble({
         </div>
       )}
 
-      {/* CHART */}
-      {chart && data && Array.isArray(data) && data.length > 0 && (
-  <div className="mt-4">
-    <ChartRenderer data={data} chartType={chart} />
-  </div>
-)}
+      {/* CHART  */}
+      {detectedChart && data && data.length > 0 && (
+        <div className="mt-4">
+          <DataChart data={data} chart={detectedChart} />
+        </div>
+      )}
 
-{insights && (
-  <div className="mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-sm">
-    💡 {insights}
-  </div>
-)}
+      {/*  INSIGHTS  */}
+      {insights && (
+        <div className="mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-sm">
+          💡 {insights}
+        </div>
+      )}
+
       {/* STATUS */}
       {isUser && (
         <div className="text-[10px] text-right mt-2 text-gray-300">

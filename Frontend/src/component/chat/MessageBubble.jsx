@@ -1,13 +1,15 @@
 import { motion } from "framer-motion";
 import DataChart from "../DataChart.jsx";
 import { detectChartType } from "../../utils/chartDetector.js";
+import { useState } from "react";
+import ChartRenderer from "../ChartRenderer.jsx";
 
 export default function MessageBubble({
   text,
   sender,
   data,
   chart,
-  insights, 
+  insights,
   time,
   status,
   isGrouped,
@@ -16,6 +18,7 @@ export default function MessageBubble({
 
   //  use detected chart
   const detectedChart = chart || detectChartType(data);
+const [showInsights, setShowInsights] = useState(false);
 
   return (
     <motion.div
@@ -75,12 +78,22 @@ export default function MessageBubble({
   </div>
 )}
 
+{detectedChart && data && (
+  <div className="mt-3">
+    <button
+      onClick={() => setShowInsights(!showInsights)}
+      className="text-xs px-3 py-1 bg-green-600 hover:bg-green-700 rounded-lg text-white"
+    >
+      {showInsights ? "Hide Insights" : "Explain this chart"}
+    </button>
+  </div>
+)}
       {/*  INSIGHTS  */}
-      {insights && (
-        <div className="mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-sm">
-          💡 {insights}
-        </div>
-      )}
+     {showInsights && insights && (
+  <div className="mt-3 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 text-sm whitespace-pre-line">
+    💡 {insights}
+  </div>
+)}
 
       {/* STATUS */}
       {isUser && (

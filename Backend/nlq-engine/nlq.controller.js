@@ -8,9 +8,9 @@ import { datasetManager, dataSourceManager } from "../core/managers.js";
 import { buildMongoQuery } from "./mongo-query.builder.js";
 import { aiGenerateQuery } from "./ai-structured.service.js";
 import { detectChart } from "../utils/chartDetector.js";
-import { generateInsights } from "../utils/insightGenerator.js";
 import { exploreDataset } from "../utils/datasetExplorer.js";
 import { aiFallback } from "./ai-fallback.service.js";
+import { generateAIInsights } from "../utils/aiInsights.js";
 
 export async function handleNLQ(req, res) {
   const { question, text, source = "sqlite", dataset } = req.body;
@@ -47,14 +47,14 @@ if (exploration) {
     source: "explorer"
   });
 }
-  // 1️⃣ Read schema
+  // 1 Read schema
   const schema = await dataSource.getSchema();
 
-  // 2️⃣ NLP detection
+  // 2 NLP detection
   const intent = parseIntent(finalQuestion);
   const table = detectTable(finalQuestion, schema);
 
-  // 🔁 AI fallback if table not detected
+  //  AI fallback if table not detected
   if (!table) {
     try {
       const aiQuery = await aiGenerateQuery(
@@ -113,17 +113,33 @@ if (exploration) {
   }
 
 const chart = detectChart(resultRows);
-const insights = generateInsights(resultRows);
 
-const answer =
-  insights ||
-  toNaturalLanguage(resultRows);
+//  STEP 1: Handle NO DATA
+if (!resultRows || resultRows.length === 0) {
+  const aiText = await aiFallback(finalQuestion, []);
 
+  return res.json({
+    question: finalQuestion,
+    answer: aiText,
+    data: [],
+    insights: null,
+    chart: null,
+    source
+  });
+}
+
+//  STEP 2: Generate AI Insights 
+const aiInsights = await generateAIInsights(resultRows);
+
+//  STEP 3: Generate fallback answer text
+const answer = toNaturalLanguage(resultRows);
+
+//  STEP 4: Send response
 return res.json({
   question: finalQuestion,
   generatedQuery,
   answer,
-  insights,
+  insights: aiInsights, 
   data: resultRows,
   chart,
   source

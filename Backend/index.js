@@ -48,7 +48,7 @@ app.get('/', (req, res) => {
   res.send('Hello World!');
 });
 
-// 🔥 CREATE & EXPORT SINGLE DATASOURCE MANAGER
+
 
 // Register SQLite
 dataSourceManager.register(
@@ -83,7 +83,7 @@ app.use("/api/upload-csv", uploadRoutes);
 app.use("/api/datasets", datasetRoutes);
 app.use("/api/mongo", mongoRoute);
 app.use("/api/auth", authRoutes);
-app.use("/api/dashboard", dashboardRoutes);
+app.use("/api", dashboardRoutes);
 app.use("/api/analysis", analysisRoutes);
 
 app.listen(port, () => {

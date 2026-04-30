@@ -83,12 +83,16 @@ const {name} = useParams();
       <div className="bg-white p-4 rounded-xl shadow">
   <h2 className="text-lg font-semibold mb-3">Smart Insights</h2>
 
-  {dashboard.insights?.slice(0, 6).map((i, idx) => (
-  <p key={idx} className="text-sm flex items-center gap-2">
-    📊 <span className="font-medium">{i.column}:</span>{" "}
-    {i.values?.[0]?.[0]}
-  </p>
-))}
+ {Array.isArray(dashboard.insights) && dashboard.insights.length > 0 ? (
+  dashboard.insights.slice(0, 6).map((i, idx) => (
+    <p key={idx} className="text-sm flex items-center gap-2">
+      📊 <span className="font-medium">{i.column}:</span>{" "}
+      {i.values?.[0]?.[0]} ({i.values?.[0]?.[1]})
+    </p>
+  ))
+) : (
+  <p className="text-gray-400 text-sm">No insights available</p>
+)}
 </div>
 
       {/* CHARTS */}

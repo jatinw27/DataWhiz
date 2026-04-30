@@ -4,7 +4,8 @@ import {
   sendChatMessage,
   getDatasetSummary,
 } from "../services/api";
-import { detectChart } from "../utils/chartDetector.js";
+import { detectChartType } from "../utils/chartDetector.js";
+
 /* =========================
    SIMPLE ENGLISH EXPLANATION
 ========================= */

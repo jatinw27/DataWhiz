@@ -1,16 +1,33 @@
 export function generateInsights(data) {
-  if (!data || data.length === 0) return null;
+  if (!data || data.length === 0) return [];
 
-  // sort descending
-  const sorted = [...data].sort((a, b) => b.value - a.value);
+  const insights = [];
+  const keys = Object.keys(data[0]);
 
-  const top = sorted[0];
-  const avg =
-    sorted.reduce((sum, d) => sum + d.value, 0) / sorted.length;
+  keys.forEach((key) => {
+    const values = data.map(row => row[key]).filter(Boolean);
 
-  return `
-Top category is ${top.label} with ${top.value} records.
-Average count across categories is ${avg.toFixed(1)}.
-Distribution is ${top.value > avg * 2 ? "skewed" : "balanced"}.
-`;
+    // only for strings
+    if (typeof values[0] !== "string") return;
+
+    const freq = {};
+
+    values.forEach(v => {
+      freq[v] = (freq[v] || 0) + 1;
+    });
+
+    const sorted = Object.entries(freq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+
+    if (sorted.length > 0) {
+      insights.push({
+        column: key,
+        type: "topValues",
+        values: sorted
+      });
+    }
+  });
+
+  return insights;
 }

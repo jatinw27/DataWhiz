@@ -1,96 +1,81 @@
-import { generateAutoAnalysis } from "./autoAnalysis.js";
-import { generateAISummary } from "./aiSummary.js";
 export async function generateDashboard(dataSource) {
   console.log("🔥 NEW DASHBOARD LOGIC RUNNING");
+const insights = await dataSource.getInsights?.() || generateInsights(sampleData);
+  let stats = {};
+  let insights = [];
 
-  const stats = await dataSource.getColumnStats();
-  const insights = await dataSource.getInsights();
+  try {
+    if (dataSource.getColumnStats) {
+      stats = await dataSource.getColumnStats();
+    }
+  } catch (e) {
+    console.log("Stats failed:", e.message);
+  }
 
-  const charts = [];
+  try {
+    if (dataSource.getInsights) {
+      insights = await dataSource.getInsights();
+    }
+  } catch (e) {
+    console.log("Insights failed:", e.message);
+  }
 
-  // ✅ SMART FILTER
-  insights
-    .filter(i => {
-      const col = i.column.toLowerCase();
-      const meta = stats[i.column];
+  // ✅ fallback data
+  const data = await dataSource.runQuery({}) || [];
 
-      return (
-        i.type === "topValues" &&
-        meta.type === "string" &&
-        meta.uniqueCount <= 50 &&
-        !col.includes("id") &&
-        !col.includes("email") &&
-        !col.includes("phone") &&
-        !col.includes("website")
-      );
-    })
-    .slice(0, 3)
-    .forEach(i => {
-      charts.push({
-        type: "topValues",
-        column: i.column,
-        values: i.values.map(([name, count]) => ({
-          name,
-          count
-        }))
-      });
-    });
-
-  // ✅ FALLBACK (STRONG)
-  if (charts.length === 0) {
-    const fallback = insights.find(i => {
-      const col = i.column.toLowerCase();
-      return (
-        i.type === "topValues" &&
-        !col.includes("id") &&
-        !col.includes("email") &&
-        !col.includes("phone")
-      );
-    });
-
-    if (fallback) {
-      charts.push({
-        type: "topValues",
-        column: fallback.column,
-        values: fallback.values.map(([name, count]) => ({
-          name,
-          count
-        }))
-      });
+  // ✅ fallback stats (if missing)
+  if (Object.keys(stats).length === 0 && data.length > 0) {
+    const sample = data[0];
+    for (let key in sample) {
+      stats[key] = {
+        type: typeof sample[key],
+        uniqueCount: new Set(data.map(d => d[key])).size
+      };
     }
   }
 
-  // ✅ NUMERIC CHART (RELAXED)
-  const numericCol = Object.entries(stats).find(
-    ([col, meta]) =>
-      meta.type === "number" &&
-      meta.uniqueCount > 5 &&
-      col !== "Index"
-  );
+  // ✅ fallback insights (if missing)
+  if (!insights.length && data.length > 0) {
+    const key = Object.keys(data[0])[0];
 
-  if (numericCol) {
-    charts.push({
-      type: "histogram",
-      x: numericCol[0],
-      y: numericCol[0]
+    const counts = {};
+    data.forEach(d => {
+      counts[d[key]] = (counts[d[key]] || 0) + 1;
+    });
+
+    insights.push({
+      type: "topValues",
+      column: key,
+      values: Object.entries(counts).slice(0, 5)
     });
   }
 
-  const sampleData = (await dataSource.runQuery({}))?.slice(0, 100);
-let aiSummary = null;
+  // ✅ charts
+  const charts = insights.slice(0, 2).map(i => ({
+    type: "topValues",
+    column: i.column,
+    values: i.values.map(([name, count]) => ({ name, count }))
+  }));
 
-try {
-  aiSummary = await generateAISummary(dataSource);
-} catch (err) {
-  console.log("AI failed, fallback used");
-}
-  // console.log("FINAL CHARTS:", charts.length);
-const summary = await generateAutoAnalysis(dataSource);
+  // ✅ summary
+  const summary = [
+    `Dataset has ${data.length} rows`,
+    `Columns: ${Object.keys(data[0] || {}).length}`
+  ];
+
+  let aiSummary = null;
+
+  try {
+    aiSummary = await generateAISummary(dataSource);
+  } catch {
+    console.log("AI summary skipped");
+  }
+
   return {
     stats,
     insights,
     charts,
-    data: sampleData,
+    data: data.slice(0, 100),
     summary,
     aiSummary,
   };

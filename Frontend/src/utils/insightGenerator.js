@@ -15,7 +15,7 @@ export function generateInsights(data) {
   const total = values.reduce((a, b) => a + b, 0);
   const avg = (total / values.length).toFixed(2);
 
-  // 🔥 detect distribution type
+  //  detect distribution type
   const max = Math.max(...values);
   const min = Math.min(...values);
 

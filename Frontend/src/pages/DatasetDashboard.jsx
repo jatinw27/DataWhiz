@@ -84,12 +84,19 @@ const {name} = useParams();
   <h2 className="text-lg font-semibold mb-3">Smart Insights</h2>
 
  {Array.isArray(dashboard.insights) && dashboard.insights.length > 0 ? (
-  dashboard.insights.slice(0, 6).map((i, idx) => (
-    <p key={idx} className="text-sm flex items-center gap-2">
-      📊 <span className="font-medium">{i.column}:</span>{" "}
-      {i.values?.[0]?.[0]} ({i.values?.[0]?.[1]})
-    </p>
-  ))
+  dashboard.insights.slice(0, 6).map((i, idx) => {
+    const top = i.values?.[0];
+
+    return (
+      <div key={idx} className="text-sm flex items-start gap-2">
+        <span>💡</span>
+        <p>
+          Most common <b>{i.column}</b> is{" "}
+          <b>{top?.[0]}</b> ({top?.[1]} records)
+        </p>
+      </div>
+    );
+  })
 ) : (
   <p className="text-gray-400 text-sm">No insights available</p>
 )}
@@ -103,15 +110,36 @@ const {name} = useParams();
           Charts
         </h2>
 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-  {dashboard.charts?.map((chart, idx) => (
-    <div
-      key={idx}
-      className="bg-white p-4 rounded-xl shadow"
-    >
-      
-      <DataChart data={dashboard.data} chart={chart} />
+ {dashboard.charts?.map((chart, idx) => {
+  let formattedData = [];
+  let chartType = "bar";
+
+  if (chart.type === "topValues") {
+    formattedData = chart.values.map(v => ({
+      name: v.name,
+      value: v.count
+    }));
+    chartType = "bar";
+  }
+
+  if (chart.type === "histogram") {
+    formattedData = dashboard.data.map(d => ({
+      name: d[chart.x],
+      value: d[chart.y]
+    }));
+    chartType = "line";
+  }
+
+  return (
+    <div key={idx} className="bg-white p-4 rounded-xl shadow">
+      <h3 className="text-sm font-semibold mb-2">
+        {chart.column}
+      </h3>
+
+      <DataChart data={formattedData} chart={chartType} />
     </div>
-  ))}
+  );
+})}
 </div>
       </div>
 

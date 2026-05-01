@@ -1,9 +1,13 @@
 export async function generateDashboard(dataSource) {
   console.log("🔥 NEW DASHBOARD LOGIC RUNNING");
-const insights = await dataSource.getInsights?.() || generateInsights(sampleData);
+
   let stats = {};
   let insights = [];
 
+  //  get data FIRST
+  const data = await dataSource.runQuery({}) || [];
+
+  //  STATS
   try {
     if (dataSource.getColumnStats) {
       stats = await dataSource.getColumnStats();
@@ -12,6 +16,7 @@ const insights = await dataSource.getInsights?.() || generateInsights(sampleData
     console.log("Stats failed:", e.message);
   }
 
+  //  INSIGHTS (primary)
   try {
     if (dataSource.getInsights) {
       insights = await dataSource.getInsights();
@@ -20,10 +25,7 @@ const insights = await dataSource.getInsights?.() || generateInsights(sampleData
     console.log("Insights failed:", e.message);
   }
 
-  // ✅ fallback data
-  const data = await dataSource.runQuery({}) || [];
-
-  // ✅ fallback stats (if missing)
+  //  fallback stats
   if (Object.keys(stats).length === 0 && data.length > 0) {
     const sample = data[0];
     for (let key in sample) {
@@ -34,30 +36,49 @@ const insights = await dataSource.getInsights?.() || generateInsights(sampleData
     }
   }
 
-  // ✅ fallback insights (if missing)
-  if (!insights.length && data.length > 0) {
-    const key = Object.keys(data[0])[0];
+  
+  //  MULTI-COLUMN SMART INSIGHTS
+if ((!insights || insights.length === 0) && data.length > 0) {
+  const columns = Object.keys(data[0]);
 
-    const counts = {};
-    data.forEach(d => {
-      counts[d[key]] = (counts[d[key]] || 0) + 1;
+  insights = columns
+    .filter(col => {
+      const val = data[0][col];
+      return (
+        typeof val === "string" &&
+        !col.toLowerCase().includes("id") &&
+        !col.toLowerCase().includes("email") &&
+        !col.toLowerCase().includes("phone") &&
+        !col.toLowerCase().includes("website")
+      );
+    })
+    .slice(0, 3) 
+    .map(col => {
+      const counts = {};
+
+      data.forEach(d => {
+        const value = d[col];
+        counts[value] = (counts[value] || 0) + 1;
+      });
+
+      return {
+        type: "topValues",
+        column: col,
+        values: Object.entries(counts)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 5)
+      };
     });
+}
 
-    insights.push({
-      type: "topValues",
-      column: key,
-      values: Object.entries(counts).slice(0, 5)
-    });
-  }
-
-  // ✅ charts
+  //  charts
   const charts = insights.slice(0, 2).map(i => ({
     type: "topValues",
     column: i.column,
     values: i.values.map(([name, count]) => ({ name, count }))
   }));
 
-  // ✅ summary
+  //  summary
   const summary = [
     `Dataset has ${data.length} rows`,
     `Columns: ${Object.keys(data[0] || {}).length}`
